@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Project>
+  <EntityDefs>
+    <EntityDef name="Doc">
+      <Attributes>
+        <Attribute name="TurnoverName">Some value</Attribute>
+        <Attribute name="Status">Active</Attribute>
+      </Attributes>
+    </EntityDef>
+  </EntityDefs>
+</Project>

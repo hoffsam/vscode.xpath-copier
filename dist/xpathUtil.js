@@ -65,15 +65,21 @@ var XPathFormat;
  * @param options   Additional options such as custom format templates.
  */
 async function computeXPathForPosition(document, position, format, options = {}) {
+    console.log(`XPath Copier: computeXPathForPosition called for ${document.uri.toString()}`);
     const symbols = await vscode.commands.executeCommand('vscode.executeDocumentSymbolProvider', document.uri);
+    console.log(`XPath Copier: Retrieved ${symbols?.length || 0} symbols from language server`);
     if (!symbols || symbols.length === 0) {
+        console.log('XPath Copier: No symbols available from document symbol provider');
         return undefined;
     }
     const symbolPath = findSymbolPath(symbols, position);
+    console.log(`XPath Copier: Found symbol path with ${symbolPath?.length || 0} elements`);
     if (!symbolPath || symbolPath.length === 0) {
+        console.log('XPath Copier: No symbol path found for position');
         return undefined;
     }
     const segments = computeSegments(symbolPath, document);
+    console.log(`XPath Copier: Computed ${segments.length} segments`);
     if (format === XPathFormat.Custom) {
         const templates = options.customTemplates ?? [];
         if (templates.length === 0) {

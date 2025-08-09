@@ -11,27 +11,20 @@ import {
  * This method is called when your extension is activated.  VS Code will
  * activate the extension the first time a file of the configured languages is
  * opened or any of the contributed commands is invoked.  We register all
- * commands here and perform a simple check for the presence of an XML
- * language server.  Without one we cannot compute meaningful XPaths.
+ * commands here and perform runtime checks for document symbols when needed.
  */
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
-  // Verify that an XML language server is installed.  LemMinx (Red Hat
-  // XML) registers the extension id 'redhat.vscode-xml'.  If no such
-  // extension is present we display a warning and do not activate the
-  // commands.  This prevents runtime errors later.
-  const xmlServer = vscode.extensions.getExtension('redhat.vscode-xml');
-  if (!xmlServer) {
-    vscode.window.showWarningMessage(
-      'XPath Copier requires an XML language server (e.g. Red Hat XML) to function.  Please install an XML extension and reload.'
-    );
-    return;
-  }
+  console.log('XPath Copier: Extension activating');
+  // Extension now activates and registers commands.
+  // Runtime checks for document symbols will be done when commands are executed.
 
   /**
    * Helper to register a simple copy command bound to a specific format.
    */
   function registerCopyCommand(cmd: string, fmt: XPathFormat) {
+    console.log(`XPath Copier: Registering command ${cmd}`);
     const disposable = vscode.commands.registerCommand(cmd, async () => {
+      console.log(`XPath Copier: Command ${cmd} executed`);
       await copyXPaths(fmt);
     });
     context.subscriptions.push(disposable);
@@ -62,6 +55,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     }
   );
   context.subscriptions.push(reverseDisposable);
+  
+  console.log('XPath Copier: Extension activation completed');
 }
 
 /**
@@ -70,8 +65,11 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
  * window to provide context.
  */
 async function copyXPaths(format: XPathFormat): Promise<void> {
+  console.log(`XPath Copier: copyXPaths called with format: ${format}`);
   const editor = vscode.window.activeTextEditor;
   if (!editor) {
+    console.log('XPath Copier: No active editor');
+    vscode.window.showWarningMessage('No active editor');
     return;
   }
   const document = editor.document;
@@ -85,14 +83,18 @@ async function copyXPaths(format: XPathFormat): Promise<void> {
     vscode.window.showWarningMessage(`The ${format} format is disabled in settings.`);
     return;
   }
+  console.log(`XPath Copier: Document language: ${document.languageId}, selections: ${selections.length}`);
   const results: string[] = [];
   for (const sel of selections) {
     const pos = sel.active;
+    console.log(`XPath Copier: Computing XPath for position: line ${pos.line}, char ${pos.character}`);
     const xpath = await computeXPathForPosition(document, pos, format, { customTemplates });
+    console.log(`XPath Copier: Computed XPath: ${xpath}`);
     if (xpath) {
       results.push(xpath);
     }
   }
+  console.log(`XPath Copier: Results: ${results.length} XPaths computed`);
   if (results.length === 0) {
     vscode.window.showWarningMessage('Unable to compute XPath for the current selection.');
     return;
@@ -108,27 +110,13 @@ async function copyXPaths(format: XPathFormat): Promise<void> {
     }
   }
   await vscode.env.clipboard.writeText(output);
-  vscode.window.setStatusBarMessage(`Copied XPath${results.length > 1 ? 's' : ''}`, 2000);
-  // Optionally show a peek for context when a single position is selected
-  if (selections.length === 1 && format !== XPathFormat.Breadcrumb) {
-    const sym = await computeSymbolForPosition(document, selections[0].active);
-    if (sym) {
-      const location = new vscode.Location(document.uri, sym.selectionRange || sym.range);
-      // Show a peek window similar to the references view
-      vscode.commands.executeCommand(
-        'editor.action.peekLocations',
-        document.uri,
-        selections[0].active,
-        [location],
-        'peek'
-      );
-    }
-  }
+  console.log(`XPath Copier: Successfully copied to clipboard: ${output}`);
+  vscode.window.showInformationMessage(`Copied XPath${results.length > 1 ? 's' : ''} to clipboard`);
 }
 
 /**
  * Present a QuickPick listing all enabled formats and any custom templates.
- * The user’s selection will determine which XPath string is generated.
+ * The user's selection will determine which XPath string is generated.
  */
 async function showQuickPick(): Promise<void> {
   const editor = vscode.window.activeTextEditor;
@@ -208,7 +196,8 @@ async function copyXPathsCustom(customTemplates: string[]): Promise<void> {
     output = multicursorFormat === 'json' ? JSON.stringify(results, null, 2) : results.join('\n');
   }
   await vscode.env.clipboard.writeText(output);
-  vscode.window.setStatusBarMessage(`Copied XPath${results.length > 1 ? 's' : ''}`, 2000);
+  console.log(`XPath Copier: Successfully copied to clipboard: ${output}`);
+  vscode.window.showInformationMessage(`Copied XPath${results.length > 1 ? 's' : ''} to clipboard`);
 }
 
 /**

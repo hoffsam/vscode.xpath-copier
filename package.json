@@ -60,47 +60,44 @@
         "title": "XPath: Go To…"
       }
     ],
+    "submenus": [
+      {
+        "id": "xpath",
+        "label": "XPath"
+      }
+    ],
     "menus": {
       "editor/context": [
         {
-          "command": "xpathCopier.copyXPathFull",
+          "submenu": "xpath",
           "when": "(editorLangId == 'xml' || editorLangId == 'html' || editorLangId == 'xhtml') && editorTextFocus",
-          "group": "Copy XPath"
+          "group": "navigation"
+        }
+      ],
+      "xpath": [
+        {
+          "command": "xpathCopier.copyXPathFull"
         },
         {
-          "command": "xpathCopier.copyXPathCompact",
-          "when": "(resourceLangId == xml || resourceLangId == html || resourceLangId == xhtml)",
-          "group": "Copy XPath"
+          "command": "xpathCopier.copyXPathCompact"
         },
         {
-          "command": "xpathCopier.copyXPathNamesOnly",
-          "when": "resourceLangId == xml || resourceLangId == html || resourceLangId == xhtml",
-          "group": "navigation@xpath"
+          "command": "xpathCopier.copyXPathNamesOnly"
         },
         {
-          "command": "xpathCopier.copyXPathNamedFull",
-          "when": "resourceLangId == xml || resourceLangId == html || resourceLangId == xhtml",
-          "group": "navigation@xpath"
+          "command": "xpathCopier.copyXPathNamedFull"
         },
         {
-          "command": "xpathCopier.copyXPathNamedCompact",
-          "when": "resourceLangId == xml || resourceLangId == html || resourceLangId == xhtml",
-          "group": "navigation@xpath"
+          "command": "xpathCopier.copyXPathNamedCompact"
         },
         {
-          "command": "xpathCopier.copyXPathBreadcrumb",
-          "when": "resourceLangId == xml || resourceLangId == html || resourceLangId == xhtml",
-          "group": "navigation@xpath"
+          "command": "xpathCopier.copyXPathBreadcrumb"
         },
         {
-          "command": "xpathCopier.copyXPathQuickPick",
-          "when": "resourceLangId == xml || resourceLangId == html || resourceLangId == xhtml",
-          "group": "navigation@xpath"
+          "command": "xpathCopier.copyXPathQuickPick"
         },
         {
-          "command": "xpathCopier.copyXPathReverse",
-          "when": "resourceLangId == xml || resourceLangId == html || resourceLangId == xhtml",
-          "group": "navigation@xpath"
+          "command": "xpathCopier.copyXPathReverse"
         }
       ]
     },

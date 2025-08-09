@@ -29,11 +29,17 @@ This is a VS Code extension called "XPath Copier" that generates XPath expressio
 
 ### Extension Integration Points
 
-- **Language Server Dependency**: Requires XML language server (e.g., Red Hat XML) for document symbols
-- **Commands**: 8 contributed commands for different XPath formats and utilities
-- **Context Menus**: Editor context menu integration for XML/HTML/XHTML files
+- **Language Server Dependency**: Works with any XML language server that provides document symbols
+- **Commands**: 8 contributed commands for different XPath formats and utilities  
+- **Context Menus**: All commands grouped under "XPath" submenu in editor context menu for XML/HTML/XHTML files
 - **Keybindings**: Keyboard shortcuts for common XPath formats
 - **Configuration**: Extensive settings under `xpathCopier` namespace
+
+### Recent Changes
+
+- **Removed Language Server Check**: Extension now activates without requiring specific "redhat.vscode-xml" extension
+- **Simplified UI**: Removed CodeLens-like peek view popup; commands only copy to clipboard and show notification
+- **Improved Context Menu**: All XPath commands grouped under single "XPath" submenu instead of scattered individual entries
 
 ## Code Structure
 
