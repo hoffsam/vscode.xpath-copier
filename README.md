@@ -17,7 +17,7 @@ Six built‑in formats are supported:
 | **Named Compact** | `/Project/EntityDefs/EntityDef[@name='Doc']/Attributes/Attribute[@name='TurnoverName']`                   |
 | **Breadcrumb**  | `Project > EntityDefs > EntityDef (Doc) > Attributes > Attribute (TurnoverName)`                             |
 
-You can trigger any of these commands from the Command Palette, a context menu in the editor or via optional keybindings.  A single *“XPath: Copy…”* command displays a Quick Pick where you can choose the desired format.
+You can trigger any of these commands directly from the Command Palette, a context menu in the editor or via optional keybindings.  A single *“XPath: Copy…”* command displays a Quick Pick where you can choose the desired format.
 
 ### 📄 Paste & Go
 
@@ -27,7 +27,7 @@ The **“XPath: Go To…”** command lets you paste an XPath string (such as 
 
 When you have multiple selections or cursors active, XPath Copier will generate a list of XPaths.  You can choose whether multiple results are joined with newlines or encoded as a JSON array via the `xpathCopier.multicursorFormat` setting.
 
-### 🧠 Uses the Language Server for Accurate Paths
+### 🧠 Uses the  LemMinX XML Language Server via Red Hat's XML Extension for Accurate Paths
 
 XPath Copier relies on VS Code’s document symbol provider (powered by the [Red Hat XML Language Server](https://marketplace.visualstudio.com/items?itemName=redhat.vscode-xml)) to understand the structure of your document.  Make sure you have an XML language server installed and running—such as [redhat.vscode‑xml](https://marketplace.visualstudio.com/items?itemName=redhat.vscode-xml) or another extension that provides XML support.  If no language server is available the extension will warn you on activation and immediately disable itself.
 

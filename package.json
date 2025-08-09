@@ -2,7 +2,7 @@
   "name": "vscode.xpath-copier",
   "displayName": "XPath Copier",
   "description": "Copy XPaths in various formats from XML/HTML/XHTML files.",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "publisher": "Sammy",
   "engines": {
     "vscode": "^1.80.0"
@@ -104,32 +104,7 @@
     "keybindings": [
       {
         "key": "ctrl+shift+x",
-        "command": "xpathCopier.copyXPathFull",
-        "when": "editorTextFocus && (resourceLangId == xml || resourceLangId == html || resourceLangId == xhtml)"
-      },
-      {
-        "key": "ctrl+shift+c",
-        "command": "xpathCopier.copyXPathCompact",
-        "when": "editorTextFocus && (resourceLangId == xml || resourceLangId == html || resourceLangId == xhtml)"
-      },
-      {
-        "key": "ctrl+shift+n",
-        "command": "xpathCopier.copyXPathNamesOnly",
-        "when": "editorTextFocus && (resourceLangId == xml || resourceLangId == html || resourceLangId == xhtml)"
-      },
-      {
-        "key": "ctrl+shift+f",
-        "command": "xpathCopier.copyXPathNamedFull",
-        "when": "editorTextFocus && (resourceLangId == xml || resourceLangId == html || resourceLangId == xhtml)"
-      },
-      {
-        "key": "ctrl+shift+m",
-        "command": "xpathCopier.copyXPathNamedCompact",
-        "when": "editorTextFocus && (resourceLangId == xml || resourceLangId == html || resourceLangId == xhtml)"
-      },
-      {
-        "key": "ctrl+shift+b",
-        "command": "xpathCopier.copyXPathBreadcrumb",
+        "command": "xpathCopier.copyXPathQuickPick",
         "when": "editorTextFocus && (resourceLangId == xml || resourceLangId == html || resourceLangId == xhtml)"
       }
     ],
@@ -236,5 +211,10 @@
     "ts-node": "^10.9.1",
     "typescript": "^5.9.2",
     "vsce": "^2.15.0"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hoffsam/vscode.xpath-copier.git"
+  },
+  "license": "MIT"
 }
