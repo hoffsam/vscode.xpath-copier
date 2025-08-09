@@ -1,0 +1,10 @@
+**/.git/**
+**/test/**
+**/fixtures/**
+**/node_modules/**
+**/*.ts
+src/**
+out/**
+tsconfig.json
+README.md
+package-lock.json
