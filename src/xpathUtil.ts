@@ -55,6 +55,16 @@ export interface ComputeOptions {
    * Whether element skipping is enabled.
    */
   enableSkipping?: boolean;
+
+  /**
+   * The attribute name to use for extracting element names (default: 'name').
+   */
+  nameAttribute?: string;
+
+  /**
+   * When true, show only the name attribute value instead of 'tag (value)' format.
+   */
+  nameOnly?: boolean;
 }
 
 /**
@@ -95,7 +105,7 @@ export async function computeXPathForPosition(
     const template = templates[0];
     return buildCustomXPath(segments, template);
   }
-  return buildXPath(segments, format);
+  return buildXPath(segments, format, options);
 }
 
 /**
@@ -170,6 +180,7 @@ function computeSegmentsFromElements(
   options?: ComputeOptions
 ): SegmentInfo[] {
   const skipElements = getSkipElements(options);
+  const nameAttribute = options?.nameAttribute || 'name';
 
   const segments: SegmentInfo[] = [];
   for (let i = 0; i < elementPath.length; i++) {
@@ -182,7 +193,7 @@ function computeSegmentsFromElements(
 
     // Compute sibling index considering skipped elements
     const index = computeXmlSiblingIndex(elementPath, i, document, skipElements);
-    const nameAttr = element.attributes.get('name');
+    const nameAttr = element.attributes.get(nameAttribute);
     segments.push({ tag: element.name, index, nameAttr });
   }
   return segments;
@@ -275,7 +286,9 @@ function extractNameAttribute(
  * Build a string representation of the XPath given the segments and
  * selected format.  Exported for unit testing.
  */
-export function buildXPath(segments: SegmentInfo[], format: XPathFormat): string {
+export function buildXPath(segments: SegmentInfo[], format: XPathFormat, options?: ComputeOptions): string {
+  const nameOnly = options?.nameOnly || false;
+
   switch (format) {
     case XPathFormat.Full:
       return segments.map((seg) => `/${seg.tag}[${seg.index}]`).join('');
@@ -294,7 +307,7 @@ export function buildXPath(segments: SegmentInfo[], format: XPathFormat): string
       return segments
         .map((seg) => {
           if (seg.nameAttr) {
-            return `/${seg.tag}[@name='${escapeXPathString(seg.nameAttr)}']`;
+            return nameOnly ? `/${seg.nameAttr}` : `/${seg.tag}[@name='${escapeXPathString(seg.nameAttr)}']`;
           }
           return seg.index > 1 ? `/${seg.tag}[${seg.index}]` : `/${seg.tag}`;
         })
@@ -303,7 +316,7 @@ export function buildXPath(segments: SegmentInfo[], format: XPathFormat): string
       return segments
         .map((seg) => {
           if (seg.nameAttr) {
-            return `/${seg.tag}[@name='${escapeXPathString(seg.nameAttr)}']`;
+            return nameOnly ? `/${seg.nameAttr}` : `/${seg.tag}[@name='${escapeXPathString(seg.nameAttr)}']`;
           }
           return seg.index > 1 ? `/${seg.tag}[${seg.index}]` : `/${seg.tag}`;
         })
@@ -311,6 +324,9 @@ export function buildXPath(segments: SegmentInfo[], format: XPathFormat): string
     case XPathFormat.Breadcrumb:
       return segments
         .map((seg) => {
+          if (nameOnly && seg.nameAttr) {
+            return seg.nameAttr;
+          }
           const namePart = seg.nameAttr ? ` (${seg.nameAttr})` : '';
           return `${seg.tag}${namePart}`;
         })

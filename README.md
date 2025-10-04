@@ -1,6 +1,6 @@
 # XPath Copier for VS Code
 
-**XPath Copier** is a Visual Studio Code extension that makes it simple to generate and copy XPaths for elements in XML‑like documents.  It works with XML, HTML and XHTML files (or any other languages you configure) and offers several formats including full paths with indexes, compact paths without unnecessary indexes, name‑based paths and human‑readable breadcrumbs.  A unified *Quick Pick* makes it easy to choose a format on the fly, and a reverse command lets you paste an XPath and jump directly to the referenced element.
+**XPath Copier** makes it simple to generate and copy XPaths for elements in XML‑like documents.  It works with XML, HTML and XHTML files (or any other languages you configure) and offers several formats including full paths with indexes, compact paths without unnecessary indexes, name‑based paths and human‑readable breadcrumbs.  A unified *Quick Pick* makes it easy to choose a format on the fly, and a reverse command lets you paste an XPath and jump directly to the referenced element.
 
 ## Features
 
@@ -27,10 +27,6 @@ The **“XPath: Go To…”** command lets you paste an XPath string (such as 
 
 When you have multiple selections or cursors active, XPath Copier will generate a list of XPaths.  You can choose whether multiple results are joined with newlines or encoded as a JSON array via the `xpathCopier.multicursorFormat` setting.
 
-### 🧠 Uses the  LemMinX XML Language Server via Red Hat's XML Extension for Accurate Paths
-
-XPath Copier relies on VS Code’s document symbol provider (powered by the [Red Hat XML Language Server](https://marketplace.visualstudio.com/items?itemName=redhat.vscode-xml)) to understand the structure of your document.  Make sure you have an XML language server installed and running—such as [redhat.vscode‑xml](https://marketplace.visualstudio.com/items?itemName=redhat.vscode-xml) or another extension that provides XML support.  If no language server is available the extension will warn you on activation and immediately disable itself.
-
 ### ⚙️ Configuration
 
 Settings can be adjusted in your user or workspace settings under the `xpathCopier` namespace:
@@ -43,6 +39,8 @@ Settings can be adjusted in your user or workspace settings under the `xpathCopi
 | `enableFormats.full|compact|…`            | Toggle individual formats on or off.                                      |
 | `multicursorFormat`                       | How to present multiple XPaths (`lines` or `json`).                       |
 | `customFormatTemplates`                   | Array of template strings for creating your own XPath formats.            |
+| `nameAttribute`                           | The attribute to use for extracting element names (default `name`).       |
+| `nameOnly`                                | Show only the attribute value instead of `tag (value)` format (default `false`). |
 | `enableElementSkipping`                   | Enable skipping specific elements in XPath output (default `false`).     |
 | `skipRules`                               | Array of rules specifying which elements to skip for different file patterns. |
 
@@ -50,7 +48,7 @@ See [`package.json`](package.json) for the full schema.  To add or remove langua
 
 ### 🎯 Element Skipping
 
-XPath Copier can skip specific XML elements when generating XPaths, which is particularly useful for schema files (XSD) where structural elements like `xs:sequence`, `xs:choice`, `xs:any`, and `xs:all` are often not meaningful in the XPath.
+XPath Copier can skip specific XML elements when generating XPaths, which is sometimes useful for schema files (XSD) where structural elements like `xs:sequence`, `xs:choice`, `xs:any`, and `xs:all` are sometimes not desired in the XPath.
 
 **Example Configuration:**
 
@@ -84,6 +82,38 @@ Each skip rule consists of:
 - **`filePattern`**: A glob pattern (e.g., `**/*.xsd`, `**/schema/*.xml`) that matches files where the rule applies
 - **`elementsToSkip`**: An array of element names to omit from XPath output (supports namespace prefixes like `xs:sequence`)
 
+### 🏷️ Name Attribute Configuration
+
+By default, XPath Copier looks for the `name` attribute on XML elements to provide more meaningful XPath expressions. You can customize which attribute to use and how it's displayed.
+
+**Configuration Options:**
+
+- **`nameAttribute`** (default: `"name"`): Specifies which attribute to extract from elements. You can change this to any attribute like `id`, `key`, `ref`, etc.
+- **`nameOnly`** (default: `false`): When enabled, shows only the attribute value instead of the `tag (value)` format.
+
+**Example Configuration:**
+
+```json
+{
+  "xpathCopier.nameAttribute": "name",
+  "xpathCopier.nameOnly": true
+}
+```
+
+**Example with `nameOnly: false` (default):**
+```
+Breadcrumb: xs:schema > xs:element (Person) > xs:complexType > xs:element (FirstName)
+Named Full: /xs:schema/xs:element[@name='Person']/xs:complexType/xs:element[@name='FirstName']
+```
+
+**Example with `nameOnly: true`:**
+```
+Breadcrumb: xs:schema > Person > xs:complexType > FirstName
+Named Full: /xs:schema/Person/xs:complexType/FirstName
+```
+
+This feature is particularly useful when working with schema definitions where element names provide clearer navigation paths than technical tag names. Elements without the configured attribute will still display their tag name normally.
+
 ### 🧪 Testing
 
 Unit tests live in the `test` directory and use [Mocha](https://mochajs.org/).  They verify the XPath generation logic, including indexing and name handling.  You can run the tests with:
@@ -109,8 +139,6 @@ The file `icon.png` contains a free‑to‑use icon included with this repositor
 
 ## Known Limitations
 
-* XPath Copier depends on a language server to provide document symbols.  Without one, it cannot compute meaningful XPaths.
-* Only elements represented by `DocumentSymbol` entries are considered.  Attributes and text nodes are not supported.
 * Custom format templates must use the variables `${tag}`, `${index}` and `${name}`.  If a variable is undefined for a given segment it will be replaced with an empty string.
 
 ## Contributing

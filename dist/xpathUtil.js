@@ -85,7 +85,7 @@ async function computeXPathForPosition(document, position, format, options = {})
         const template = templates[0];
         return buildCustomXPath(segments, template);
     }
-    return buildXPath(segments, format);
+    return buildXPath(segments, format, options);
 }
 /**
  * Compute the selection range for a given position.  Used to show the
@@ -143,6 +143,7 @@ function contains(range, position) {
  */
 function computeSegmentsFromElements(elementPath, document, options) {
     const skipElements = getSkipElements(options);
+    const nameAttribute = options?.nameAttribute || 'name';
     const segments = [];
     for (let i = 0; i < elementPath.length; i++) {
         const element = elementPath[i];
@@ -152,7 +153,7 @@ function computeSegmentsFromElements(elementPath, document, options) {
         }
         // Compute sibling index considering skipped elements
         const index = (0, xmlParser_1.computeSiblingIndex)(elementPath, i, document, skipElements);
-        const nameAttr = element.attributes.get('name');
+        const nameAttr = element.attributes.get(nameAttribute);
         segments.push({ tag: element.name, index, nameAttr });
     }
     return segments;
@@ -230,7 +231,8 @@ function extractNameAttribute(document, symbol) {
  * Build a string representation of the XPath given the segments and
  * selected format.  Exported for unit testing.
  */
-function buildXPath(segments, format) {
+function buildXPath(segments, format, options) {
+    const nameOnly = options?.nameOnly || false;
     switch (format) {
         case XPathFormat.Full:
             return segments.map((seg) => `/${seg.tag}[${seg.index}]`).join('');
@@ -249,7 +251,7 @@ function buildXPath(segments, format) {
             return segments
                 .map((seg) => {
                 if (seg.nameAttr) {
-                    return `/${seg.tag}[@name='${escapeXPathString(seg.nameAttr)}']`;
+                    return nameOnly ? `/${seg.nameAttr}` : `/${seg.tag}[@name='${escapeXPathString(seg.nameAttr)}']`;
                 }
                 return seg.index > 1 ? `/${seg.tag}[${seg.index}]` : `/${seg.tag}`;
             })
@@ -258,7 +260,7 @@ function buildXPath(segments, format) {
             return segments
                 .map((seg) => {
                 if (seg.nameAttr) {
-                    return `/${seg.tag}[@name='${escapeXPathString(seg.nameAttr)}']`;
+                    return nameOnly ? `/${seg.nameAttr}` : `/${seg.tag}[@name='${escapeXPathString(seg.nameAttr)}']`;
                 }
                 return seg.index > 1 ? `/${seg.tag}[${seg.index}]` : `/${seg.tag}`;
             })
@@ -266,6 +268,9 @@ function buildXPath(segments, format) {
         case XPathFormat.Breadcrumb:
             return segments
                 .map((seg) => {
+                if (nameOnly && seg.nameAttr) {
+                    return seg.nameAttr;
+                }
                 const namePart = seg.nameAttr ? ` (${seg.nameAttr})` : '';
                 return `${seg.tag}${namePart}`;
             })

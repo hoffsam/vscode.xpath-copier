@@ -19,7 +19,13 @@ interface SegmentInfo {
   nameAttr?: string;
 }
 
-function buildXPath(segments: SegmentInfo[], format: XPathFormat): string {
+interface BuildOptions {
+  nameOnly?: boolean;
+}
+
+function buildXPath(segments: SegmentInfo[], format: XPathFormat, options?: BuildOptions): string {
+  const nameOnly = options?.nameOnly || false;
+
   switch (format) {
     case XPathFormat.Full:
       return segments.map((seg) => `/${seg.tag}[${seg.index}]`).join('');
@@ -33,7 +39,7 @@ function buildXPath(segments: SegmentInfo[], format: XPathFormat): string {
       return segments
         .map((seg) => {
           if (seg.nameAttr) {
-            return `/${seg.tag}[@name='${seg.nameAttr.replace(/'/g, "''")}']`;
+            return nameOnly ? `/${seg.nameAttr}` : `/${seg.tag}[@name='${seg.nameAttr.replace(/'/g, "''")}']`;
           }
           return seg.index > 1 ? `/${seg.tag}[${seg.index}]` : `/${seg.tag}`;
         })
@@ -42,7 +48,7 @@ function buildXPath(segments: SegmentInfo[], format: XPathFormat): string {
       return segments
         .map((seg) => {
           if (seg.nameAttr) {
-            return `/${seg.tag}[@name='${seg.nameAttr.replace(/'/g, "''")}']`;
+            return nameOnly ? `/${seg.nameAttr}` : `/${seg.tag}[@name='${seg.nameAttr.replace(/'/g, "''")}']`;
           }
           return seg.index > 1 ? `/${seg.tag}[${seg.index}]` : `/${seg.tag}`;
         })
@@ -50,6 +56,9 @@ function buildXPath(segments: SegmentInfo[], format: XPathFormat): string {
     case XPathFormat.Breadcrumb:
       return segments
         .map((seg) => {
+          if (nameOnly && seg.nameAttr) {
+            return seg.nameAttr;
+          }
           const namePart = seg.nameAttr ? ` (${seg.nameAttr})` : '';
           return `${seg.tag}${namePart}`;
         })
@@ -168,5 +177,67 @@ describe('XPath Format Generation', () => {
 
     const compact = buildXPath(siblingSegments, XPathFormat.Compact);
     assert.equal(compact, '/root/item[3]');
+  });
+});
+
+describe('XPath Name Only Feature', () => {
+  const segments: SegmentInfo[] = [
+    { tag: 'Project', index: 1 },
+    { tag: 'EntityDefs', index: 1 },
+    { tag: 'EntityDef', index: 1, nameAttr: 'Doc' },
+    { tag: 'Attributes', index: 1 },
+    { tag: 'Attribute', index: 2, nameAttr: 'TurnoverName' }
+  ];
+
+  it('generates NamedFull with nameOnly showing only name values', () => {
+    const result = buildXPath(segments, XPathFormat.NamedFull, { nameOnly: true });
+    assert.equal(result, '/Project/EntityDefs/Doc/Attributes/TurnoverName');
+  });
+
+  it('generates NamedCompact with nameOnly showing only name values', () => {
+    const result = buildXPath(segments, XPathFormat.NamedCompact, { nameOnly: true });
+    assert.equal(result, '/Project/EntityDefs/Doc/Attributes/TurnoverName');
+  });
+
+  it('generates Breadcrumb with nameOnly showing only name values', () => {
+    const result = buildXPath(segments, XPathFormat.Breadcrumb, { nameOnly: true });
+    assert.equal(result, 'Project > EntityDefs > Doc > Attributes > TurnoverName');
+  });
+
+  it('handles mixed elements with and without names', () => {
+    const mixedSegments: SegmentInfo[] = [
+      { tag: 'xs:schema', index: 1 },
+      { tag: 'xs:element', index: 1, nameAttr: 'Person' },
+      { tag: 'xs:complexType', index: 1 },
+      { tag: 'xs:element', index: 2, nameAttr: 'FirstName' }
+    ];
+
+    const result = buildXPath(mixedSegments, XPathFormat.Breadcrumb, { nameOnly: true });
+    assert.equal(result, 'xs:schema > Person > xs:complexType > FirstName');
+  });
+
+  it('handles nameOnly with elements that have no name attribute', () => {
+    const noNameSegments: SegmentInfo[] = [
+      { tag: 'root', index: 1 },
+      { tag: 'item', index: 3 }
+    ];
+
+    const result = buildXPath(noNameSegments, XPathFormat.Breadcrumb, { nameOnly: true });
+    assert.equal(result, 'root > item');
+  });
+
+  it('nameOnly does not affect Full format', () => {
+    const result = buildXPath(segments, XPathFormat.Full, { nameOnly: true });
+    assert.equal(result, '/Project[1]/EntityDefs[1]/EntityDef[1]/Attributes[1]/Attribute[2]');
+  });
+
+  it('nameOnly does not affect Compact format', () => {
+    const result = buildXPath(segments, XPathFormat.Compact, { nameOnly: true });
+    assert.equal(result, '/Project/EntityDefs/EntityDef/Attributes/Attribute[2]');
+  });
+
+  it('nameOnly does not affect NamesOnly format', () => {
+    const result = buildXPath(segments, XPathFormat.NamesOnly, { nameOnly: true });
+    assert.equal(result, '/Project/EntityDefs/EntityDef/Attributes/Attribute');
   });
 });

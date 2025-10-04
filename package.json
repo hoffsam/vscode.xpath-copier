@@ -226,6 +226,16 @@
             "required": ["filePattern", "elementsToSkip"]
           },
           "description": "Rules for skipping elements in XPath based on file patterns. Each rule specifies a file pattern and list of element names to omit."
+        },
+        "xpathCopier.nameAttribute": {
+          "type": "string",
+          "default": "name",
+          "description": "The attribute to use for extracting element names (e.g., 'name', 'id', 'key')."
+        },
+        "xpathCopier.nameOnly": {
+          "type": "boolean",
+          "default": false,
+          "description": "When an element has the configured name attribute, show only the attribute value instead of 'tag (value)'."
         }
       }
     }
