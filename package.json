@@ -2,7 +2,7 @@
   "name": "vscode-xpath-copier",
   "displayName": "XPath Copier",
   "description": "Copy XPaths in various formats from XML/HTML/XHTML files.",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "publisher": "Sammy",
   "engines": {
     "vscode": "^1.80.0"
