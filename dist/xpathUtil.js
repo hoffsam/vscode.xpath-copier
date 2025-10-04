@@ -40,6 +40,7 @@ exports.computeSegments = computeSegments;
 exports.buildXPath = buildXPath;
 exports.parseXPath = parseXPath;
 exports.findSymbolByXPath = findSymbolByXPath;
+exports.getSkipElements = getSkipElements;
 const vscode = __importStar(require("vscode"));
 const xmlParser_1 = require("./xmlParser");
 /**
@@ -74,7 +75,7 @@ async function computeXPathForPosition(document, position, format, options = {})
         return undefined;
     }
     console.log(`XPath Copier: Found element path with ${elementPath.length} elements`);
-    const segments = computeSegmentsFromElements(elementPath, document);
+    const segments = computeSegmentsFromElements(elementPath, document, options);
     console.log(`XPath Copier: Computed ${segments.length} segments`);
     if (format === XPathFormat.Custom) {
         const templates = options.customTemplates ?? [];
@@ -138,12 +139,19 @@ function contains(range, position) {
 /**
  * Build the list of SegmentInfo objects from XmlElement path.
  * Computes sibling indexes and extracts name attributes.
+ * Filters out elements based on skip rules if enabled.
  */
-function computeSegmentsFromElements(elementPath, document) {
+function computeSegmentsFromElements(elementPath, document, options) {
+    const skipElements = getSkipElements(options);
     const segments = [];
     for (let i = 0; i < elementPath.length; i++) {
         const element = elementPath[i];
-        const index = (0, xmlParser_1.computeSiblingIndex)(elementPath, i, document);
+        // Skip elements that match the skip list
+        if (skipElements.has(element.name)) {
+            continue;
+        }
+        // Compute sibling index considering skipped elements
+        const index = (0, xmlParser_1.computeSiblingIndex)(elementPath, i, document, skipElements);
         const nameAttr = element.attributes.get('name');
         segments.push({ tag: element.name, index, nameAttr });
     }
@@ -352,5 +360,19 @@ function findSymbolByXPath(symbols, parsed, document) {
         candidates = chosen.children || [];
     }
     return matchedSymbol;
+}
+/**
+ * Get the set of element names to skip based on options.
+ * Returns a Set of element names that should be filtered out.
+ */
+function getSkipElements(options) {
+    if (!options?.enableSkipping || !options?.skipRules || options.skipRules.length === 0) {
+        return new Set();
+    }
+    const skipSet = new Set();
+    options.skipRules.forEach(rule => {
+        rule.elementsToSkip.forEach(elem => skipSet.add(elem));
+    });
+    return skipSet;
 }
 //# sourceMappingURL=xpathUtil.js.map

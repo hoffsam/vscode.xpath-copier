@@ -43,8 +43,46 @@ Settings can be adjusted in your user or workspace settings under the `xpathCopi
 | `enableFormats.full|compact|…`            | Toggle individual formats on or off.                                      |
 | `multicursorFormat`                       | How to present multiple XPaths (`lines` or `json`).                       |
 | `customFormatTemplates`                   | Array of template strings for creating your own XPath formats.            |
+| `enableElementSkipping`                   | Enable skipping specific elements in XPath output (default `false`).     |
+| `skipRules`                               | Array of rules specifying which elements to skip for different file patterns. |
 
 See [`package.json`](package.json) for the full schema.  To add or remove languages just set `xpathCopier.languages` to a list of language IDs; commands and context menus will follow your configuration.
+
+### 🎯 Element Skipping
+
+XPath Copier can skip specific XML elements when generating XPaths, which is particularly useful for schema files (XSD) where structural elements like `xs:sequence`, `xs:choice`, `xs:any`, and `xs:all` are often not meaningful in the XPath.
+
+**Example Configuration:**
+
+```json
+{
+  "xpathCopier.enableElementSkipping": true,
+  "xpathCopier.skipRules": [
+    {
+      "filePattern": "**/*.xsd",
+      "elementsToSkip": ["xs:sequence", "xs:choice", "xs:any", "xs:all"]
+    },
+    {
+      "filePattern": "**/schema/**/*.xml",
+      "elementsToSkip": ["metadata", "annotation"]
+    }
+  ]
+}
+```
+
+**Before** (with `xs:sequence` included):
+```
+/xs:schema[1]/xs:element[1]/xs:complexType[1]/xs:sequence[1]/xs:element[2]
+```
+
+**After** (with `xs:sequence` skipped):
+```
+/xs:schema[1]/xs:element[1]/xs:complexType[1]/xs:element[2]
+```
+
+Each skip rule consists of:
+- **`filePattern`**: A glob pattern (e.g., `**/*.xsd`, `**/schema/*.xml`) that matches files where the rule applies
+- **`elementsToSkip`**: An array of element names to omit from XPath output (supports namespace prefixes like `xs:sequence`)
 
 ### 🧪 Testing
 

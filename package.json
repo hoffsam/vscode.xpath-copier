@@ -194,6 +194,38 @@
           },
           "default": [],
           "description": "Custom XPath format templates. Each template may contain ${tag}, ${index}, and ${name} variables."
+        },
+        "xpathCopier.enableElementSkipping": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable skipping specific elements in XPath output based on file patterns."
+        },
+        "xpathCopier.skipRules": {
+          "type": "array",
+          "default": [
+            {
+              "filePattern": "**/*.xsd",
+              "elementsToSkip": ["xs:sequence", "xs:choice", "xs:any", "xs:all"]
+            }
+          ],
+          "items": {
+            "type": "object",
+            "properties": {
+              "filePattern": {
+                "type": "string",
+                "description": "Glob pattern for files (e.g., **/*.xsd, **/*.xml)"
+              },
+              "elementsToSkip": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Array of element names to skip in XPath output"
+              }
+            },
+            "required": ["filePattern", "elementsToSkip"]
+          },
+          "description": "Rules for skipping elements in XPath based on file patterns. Each rule specifies a file pattern and list of element names to omit."
         }
       }
     }
@@ -203,7 +235,7 @@
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
     "pretest": "npm run compile",
-    "test": "mocha --require ts-node/register test/formats.test.ts",
+    "test": "mocha --require ts-node/register test/formats.test.ts test/element-skipping.test.ts",
     "lint": "echo 'No linter configured'",
     "clean": "rimraf dist",
     "package": "npm run clean && npm run compile && vsce package",
@@ -211,6 +243,7 @@
     "audit": "npm audit"
   },
   "devDependencies": {
+    "@types/minimatch": "^5.1.2",
     "@types/mocha": "^10.0.0",
     "@types/node": "^18.0.0",
     "@types/vscode": "^1.80.0",
@@ -224,5 +257,8 @@
     "type": "git",
     "url": "https://github.com/hoffsam/vscode.xpath-copier.git"
   },
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "minimatch": "^10.0.3"
+  }
 }

@@ -25,6 +25,14 @@ interface SegmentInfo {
 }
 
 /**
+ * A skip rule for filtering elements from XPath output.
+ */
+export interface SkipRule {
+  filePattern: string;
+  elementsToSkip: string[];
+}
+
+/**
  * Options for computing XPaths.
  */
 export interface ComputeOptions {
@@ -36,6 +44,17 @@ export interface ComputeOptions {
    * are replaced with an empty string.
    */
   customTemplates?: string[];
+
+  /**
+   * Skip rules to apply for filtering elements from XPath output.
+   * Only rules matching the current document's file path will be applied.
+   */
+  skipRules?: SkipRule[];
+
+  /**
+   * Whether element skipping is enabled.
+   */
+  enableSkipping?: boolean;
 }
 
 /**
@@ -65,7 +84,7 @@ export async function computeXPathForPosition(
   }
 
   console.log(`XPath Copier: Found element path with ${elementPath.length} elements`);
-  const segments = computeSegmentsFromElements(elementPath, document);
+  const segments = computeSegmentsFromElements(elementPath, document, options);
   console.log(`XPath Copier: Computed ${segments.length} segments`);
 
   if (format === XPathFormat.Custom) {
@@ -143,15 +162,26 @@ function contains(range: vscode.Range, position: vscode.Position): boolean {
 /**
  * Build the list of SegmentInfo objects from XmlElement path.
  * Computes sibling indexes and extracts name attributes.
+ * Filters out elements based on skip rules if enabled.
  */
 function computeSegmentsFromElements(
   elementPath: XmlElement[],
-  document: vscode.TextDocument
+  document: vscode.TextDocument,
+  options?: ComputeOptions
 ): SegmentInfo[] {
+  const skipElements = getSkipElements(options);
+
   const segments: SegmentInfo[] = [];
   for (let i = 0; i < elementPath.length; i++) {
     const element = elementPath[i];
-    const index = computeXmlSiblingIndex(elementPath, i, document);
+
+    // Skip elements that match the skip list
+    if (skipElements.has(element.name)) {
+      continue;
+    }
+
+    // Compute sibling index considering skipped elements
+    const index = computeXmlSiblingIndex(elementPath, i, document, skipElements);
     const nameAttr = element.attributes.get('name');
     segments.push({ tag: element.name, index, nameAttr });
   }
@@ -380,4 +410,20 @@ export function findSymbolByXPath(
     candidates = chosen.children || [];
   }
   return matchedSymbol;
+}
+
+/**
+ * Get the set of element names to skip based on options.
+ * Returns a Set of element names that should be filtered out.
+ */
+export function getSkipElements(options?: ComputeOptions): Set<string> {
+  if (!options?.enableSkipping || !options?.skipRules || options.skipRules.length === 0) {
+    return new Set();
+  }
+
+  const skipSet = new Set<string>();
+  options.skipRules.forEach(rule => {
+    rule.elementsToSkip.forEach(elem => skipSet.add(elem));
+  });
+  return skipSet;
 }

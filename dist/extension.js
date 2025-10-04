@@ -36,6 +36,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.activate = activate;
 exports.deactivate = deactivate;
 const vscode = __importStar(require("vscode"));
+const minimatch_1 = require("minimatch");
 const xpathUtil_1 = require("./xpathUtil");
 const xmlParser_1 = require("./xmlParser");
 /**
@@ -79,6 +80,21 @@ async function activate(context) {
     console.log('XPath Copier: Extension activation completed');
 }
 /**
+ * Filter skip rules to only those matching the given file path.
+ * Uses minimatch for glob pattern matching.
+ */
+function matchSkipRules(filePath, rules) {
+    return rules.filter(rule => {
+        try {
+            return (0, minimatch_1.minimatch)(filePath, rule.filePattern);
+        }
+        catch (error) {
+            console.error(`XPath Copier: Invalid file pattern '${rule.filePattern}':`, error);
+            return false;
+        }
+    });
+}
+/**
  * Copy XPaths for the current selections using the given format.  Handles
  * multi‑cursor selection, clipboard writing and optionally shows a peek
  * window to provide context.
@@ -97,17 +113,29 @@ async function copyXPaths(format) {
     const multicursorFormat = config.get('multicursorFormat', 'lines');
     const customTemplates = config.get('customFormatTemplates', []);
     const enableFormats = config.get('enableFormats', {});
+    // Read element skipping configuration
+    const enableSkipping = config.get('enableElementSkipping', false);
+    const allSkipRules = config.get('skipRules', []);
+    // Match skip rules against current document path
+    const applicableSkipRules = enableSkipping
+        ? matchSkipRules(document.uri.fsPath, allSkipRules)
+        : [];
     // If the requested format is disabled skip the operation
     if (format !== xpathUtil_1.XPathFormat.Custom && enableFormats && enableFormats[format] === false) {
         vscode.window.showWarningMessage(`The ${format} format is disabled in settings.`);
         return;
     }
     console.log(`XPath Copier: Document language: ${document.languageId}, selections: ${selections.length}`);
+    console.log(`XPath Copier: Element skipping enabled: ${enableSkipping}, applicable rules: ${applicableSkipRules.length}`);
     const results = [];
     for (const sel of selections) {
         const pos = sel.active;
         console.log(`XPath Copier: Computing XPath for position: line ${pos.line}, char ${pos.character}`);
-        const xpath = await (0, xpathUtil_1.computeXPathForPosition)(document, pos, format, { customTemplates });
+        const xpath = await (0, xpathUtil_1.computeXPathForPosition)(document, pos, format, {
+            customTemplates,
+            skipRules: applicableSkipRules,
+            enableSkipping
+        });
         console.log(`XPath Copier: Computed XPath: ${xpath}`);
         if (xpath) {
             results.push(xpath);
@@ -132,7 +160,7 @@ async function copyXPaths(format) {
     }
     await vscode.env.clipboard.writeText(output);
     console.log(`XPath Copier: Successfully copied to clipboard: ${output}`);
-    vscode.window.showInformationMessage(`Copied XPath${results.length > 1 ? 's' : ''} to clipboard`);
+    vscode.window.setStatusBarMessage(`✓ Copied XPath${results.length > 1 ? 's' : ''} to clipboard`, 3000);
 }
 /**
  * Present a QuickPick listing all enabled formats and any custom templates.
@@ -218,7 +246,7 @@ async function copyXPathsCustom(customTemplates) {
     }
     await vscode.env.clipboard.writeText(output);
     console.log(`XPath Copier: Successfully copied to clipboard: ${output}`);
-    vscode.window.showInformationMessage(`Copied XPath${results.length > 1 ? 's' : ''} to clipboard`);
+    vscode.window.setStatusBarMessage(`✓ Copied XPath${results.length > 1 ? 's' : ''} to clipboard`, 3000);
 }
 /**
  * Reverse lookup: prompt the user for an XPath and, if it matches an

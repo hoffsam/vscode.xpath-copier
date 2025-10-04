@@ -180,11 +180,13 @@ function parseAttributes(attrString: string): Map<string, string> {
 /**
  * Count how many siblings with the same tag name come before this element.
  * Returns 1-based index.
+ * Skips elements in the skipElements set when counting siblings.
  */
 export function computeSiblingIndex(
   elementPath: XmlElement[],
   targetIndex: number,
-  document: vscode.TextDocument
+  document: vscode.TextDocument,
+  skipElements?: Set<string>
 ): number {
   if (targetIndex === 0) {
     return 1; // Root element is always index 1
@@ -209,7 +211,10 @@ export function computeSiblingIndex(
     if (tag.isClosing) {
       depth--;
     } else if (tag.isSelfClosing) {
-      if (depth === 1 && tag.name === target.name) {
+      // Skip counting if this element should be skipped
+      const shouldSkip = skipElements && skipElements.has(tag.name);
+
+      if (depth === 1 && tag.name === target.name && !shouldSkip) {
         sameNameCount++;
         if (parentStart + tag.offset === target.startOffset) {
           foundTarget = true;
@@ -218,7 +223,10 @@ export function computeSiblingIndex(
       }
     } else {
       depth++;
-      if (depth === 1 && tag.name === target.name) {
+      // Skip counting if this element should be skipped
+      const shouldSkip = skipElements && skipElements.has(tag.name);
+
+      if (depth === 1 && tag.name === target.name && !shouldSkip) {
         sameNameCount++;
         if (parentStart + tag.offset === target.startOffset) {
           foundTarget = true;
