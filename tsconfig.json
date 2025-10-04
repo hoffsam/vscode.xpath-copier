@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "target": "ES2021",
+    "module": "commonjs",
+    "lib": ["ES2021"],
+    "outDir": "dist",
+    "rootDir": "src",
+    "strict": true,
+    "sourceMap": true,
+    "inlineSources": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "moduleResolution": "node",
+    // Specify no explicit type libraries.  The project contains a minimal
+    // declaration for the vscode module under node_modules/@types/vscode.
+    "types": ["node", "mocha"],
+    "resolveJsonModule": true
+  },
+  "include": ["src"],
+  "exclude": ["node_modules", ".vscode-test", "test"]
+}

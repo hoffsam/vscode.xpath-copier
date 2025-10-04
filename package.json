@@ -1,0 +1,228 @@
+{
+  "name": "vscode-xpath-copier",
+  "displayName": "XPath Copier",
+  "description": "Copy XPaths in various formats from XML/HTML/XHTML files.",
+  "version": "1.1.0",
+  "publisher": "Sammy",
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "icon": "icon.png",
+  "activationEvents": [
+    "onLanguage:xml",
+    "onLanguage:html",
+    "onLanguage:xhtml",
+    "onCommand:xpathCopier.copyXPathFull",
+    "onCommand:xpathCopier.copyXPathCompact",
+    "onCommand:xpathCopier.copyXPathNamesOnly",
+    "onCommand:xpathCopier.copyXPathNamedFull",
+    "onCommand:xpathCopier.copyXPathNamedCompact",
+    "onCommand:xpathCopier.copyXPathBreadcrumb",
+    "onCommand:xpathCopier.copyXPathQuickPick",
+    "onCommand:xpathCopier.copyXPathReverse"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "xpathCopier.copyXPathFull",
+        "title": "XPath: Copy (Full)"
+      },
+      {
+        "command": "xpathCopier.copyXPathCompact",
+        "title": "XPath: Copy (Compact)"
+      },
+      {
+        "command": "xpathCopier.copyXPathNamesOnly",
+        "title": "XPath: Copy (Names Only)"
+      },
+      {
+        "command": "xpathCopier.copyXPathNamedFull",
+        "title": "XPath: Copy (Named Full)"
+      },
+      {
+        "command": "xpathCopier.copyXPathNamedCompact",
+        "title": "XPath: Copy (Named Compact)"
+      },
+      {
+        "command": "xpathCopier.copyXPathBreadcrumb",
+        "title": "XPath: Copy (Breadcrumb)"
+      },
+      {
+        "command": "xpathCopier.copyXPathQuickPick",
+        "title": "XPath: Copy…"
+      },
+      {
+        "command": "xpathCopier.copyXPathReverse",
+        "title": "XPath: Go To…"
+      }
+    ],
+    "submenus": [
+      {
+        "id": "xpath",
+        "label": "XPath"
+      }
+    ],
+    "menus": {
+      "editor/context": [
+        {
+          "submenu": "xpath",
+          "when": "(editorLangId == 'xml' || editorLangId == 'html' || editorLangId == 'xhtml') && editorTextFocus",
+          "group": "navigation"
+        }
+      ],
+      "xpath": [
+        {
+          "command": "xpathCopier.copyXPathFull"
+        },
+        {
+          "command": "xpathCopier.copyXPathCompact"
+        },
+        {
+          "command": "xpathCopier.copyXPathNamesOnly"
+        },
+        {
+          "command": "xpathCopier.copyXPathNamedFull"
+        },
+        {
+          "command": "xpathCopier.copyXPathNamedCompact"
+        },
+        {
+          "command": "xpathCopier.copyXPathBreadcrumb"
+        },
+        {
+          "command": "xpathCopier.copyXPathQuickPick"
+        },
+        {
+          "command": "xpathCopier.copyXPathReverse"
+        }
+      ]
+    },
+    "keybindings": [
+      {
+        "key": "ctrl+shift+x",
+        "command": "xpathCopier.copyXPathQuickPick",
+        "when": "editorTextFocus && (resourceLangId == xml || resourceLangId == html || resourceLangId == xhtml)"
+      }
+    ],
+    "configuration": {
+      "type": "object",
+      "title": "XPath Copier",
+      "properties": {
+        "xpathCopier.enableContextMenu": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable the context menu entries for copying XPath."
+        },
+        "xpathCopier.languages": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [
+            "xml",
+            "html",
+            "xhtml"
+          ],
+          "description": "Additional languages that should activate XPath copier commands."
+        },
+        "xpathCopier.enableQuickPick": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable a unified QuickPick for choosing which XPath format to copy."
+        },
+        "xpathCopier.enableFormats": {
+          "type": "object",
+          "default": {
+            "full": true,
+            "compact": true,
+            "namesOnly": true,
+            "namedFull": true,
+            "namedCompact": true,
+            "breadcrumb": true
+          },
+          "properties": {
+            "full": {
+              "type": "boolean",
+              "default": true,
+              "description": "Enable the full XPath format."
+            },
+            "compact": {
+              "type": "boolean",
+              "default": true,
+              "description": "Enable the compact XPath format."
+            },
+            "namesOnly": {
+              "type": "boolean",
+              "default": true,
+              "description": "Enable the names-only XPath format."
+            },
+            "namedFull": {
+              "type": "boolean",
+              "default": true,
+              "description": "Enable the named full XPath format."
+            },
+            "namedCompact": {
+              "type": "boolean",
+              "default": true,
+              "description": "Enable the named compact XPath format."
+            },
+            "breadcrumb": {
+              "type": "boolean",
+              "default": true,
+              "description": "Enable the breadcrumb format."
+            }
+          },
+          "description": "Enable or disable specific XPath formats."
+        },
+        "xpathCopier.multicursorFormat": {
+          "type": "string",
+          "default": "lines",
+          "enum": [
+            "lines",
+            "json"
+          ],
+          "description": "Format for multiple XPaths: either newline-separated lines or JSON array."
+        },
+        "xpathCopier.customFormatTemplates": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "description": "Custom XPath format templates. Each template may contain ${tag}, ${index}, and ${name} variables."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile",
+    "test": "mocha --require ts-node/register test/formats.test.ts",
+    "lint": "echo 'No linter configured'",
+    "clean": "rimraf dist",
+    "package": "npm run clean && npm run compile && vsce package",
+    "build": "npm run package",
+    "audit": "npm audit"
+  },
+  "devDependencies": {
+    "@types/mocha": "^10.0.0",
+    "@types/node": "^18.0.0",
+    "@types/vscode": "^1.80.0",
+    "@vscode/vsce": "^3.6.2",
+    "mocha": "^10.2.0",
+    "rimraf": "^6.0.1",
+    "ts-node": "^10.9.1",
+    "typescript": "^5.9.2"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hoffsam/vscode.xpath-copier.git"
+  },
+  "license": "MIT"
+}
