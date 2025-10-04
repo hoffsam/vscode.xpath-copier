@@ -76,6 +76,61 @@ function matchSkipRules(filePath: string, rules: SkipRule[]): SkipRule[] {
 }
 
 /**
+ * Handle XPath output based on user configuration settings.
+ * Can copy to clipboard, show in quick pick, and/or open in new editor.
+ */
+async function handleXPathOutput(output: string, resultCount: number): Promise<void> {
+  const config = vscode.workspace.getConfiguration('xpathCopier');
+  const copyToClipboard: boolean = config.get('copyToClipboard', true);
+  const showInQuickPick: boolean = config.get('showInQuickPick', false);
+  const openInNewEditor: boolean = config.get('openInNewEditor', false);
+
+  const actions: Promise<void>[] = [];
+
+  if (copyToClipboard) {
+    actions.push(Promise.resolve(vscode.env.clipboard.writeText(output)));
+  }
+
+  if (showInQuickPick) {
+    const pickAction = Promise.resolve(vscode.window.showQuickPick([output], {
+      placeHolder: 'XPath copied - click to copy again',
+      canPickMany: false
+    })).then(selected => {
+      if (selected) {
+        return vscode.env.clipboard.writeText(selected);
+      }
+    });
+    actions.push(pickAction);
+  }
+
+  if (openInNewEditor) {
+    const editorAction = Promise.resolve(vscode.workspace.openTextDocument({
+      content: output,
+      language: 'xpath'
+    })).then(doc => {
+      return vscode.window.showTextDocument(doc);
+    }).then(() => {});
+    actions.push(editorAction);
+  }
+
+  await Promise.all(actions);
+
+  // Show status message
+  const messages: string[] = [];
+  if (copyToClipboard) {
+    messages.push('copied to clipboard');
+  }
+  if (openInNewEditor) {
+    messages.push('opened in editor');
+  }
+
+  if (messages.length > 0) {
+    const message = `✓ XPath${resultCount > 1 ? 's' : ''} ${messages.join(' and ')}`;
+    vscode.window.setStatusBarMessage(message, 3000);
+  }
+}
+
+/**
  * Copy XPaths for the current selections using the given format.  Handles
  * multi‑cursor selection, clipboard writing and optionally shows a peek
  * window to provide context.
@@ -152,9 +207,8 @@ async function copyXPaths(format: XPathFormat): Promise<void> {
         output = results.join('\n');
       }
     }
-    await vscode.env.clipboard.writeText(output);
-    console.log(`XPath Copier: Successfully copied to clipboard: ${output}`);
-    vscode.window.setStatusBarMessage(`✓ Copied XPath${results.length > 1 ? 's' : ''} to clipboard`, 3000);
+    console.log(`XPath Copier: Generated output: ${output}`);
+    await handleXPathOutput(output, results.length);
   });
 }
 
@@ -251,9 +305,8 @@ async function copyXPathsCustom(customTemplates: string[]): Promise<void> {
     } else {
       output = multicursorFormat === 'json' ? JSON.stringify(results, null, 2) : results.join('\n');
     }
-    await vscode.env.clipboard.writeText(output);
-    console.log(`XPath Copier: Successfully copied to clipboard: ${output}`);
-    vscode.window.setStatusBarMessage(`✓ Copied XPath${results.length > 1 ? 's' : ''} to clipboard`, 3000);
+    console.log(`XPath Copier: Generated output: ${output}`);
+    await handleXPathOutput(output, results.length);
   });
 }
 

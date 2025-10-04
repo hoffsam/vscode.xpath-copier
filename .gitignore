@@ -1,0 +1,19 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+*.vsix
+
+# IDE settings
+.vscode/
+.claude/
+
+# Test files
+TEST-RESULTS.md
+test-contract.xml
+test-deep-nesting.xml
+test-sample.xml
+
+# Documentation
+CLAUDE.md

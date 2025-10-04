@@ -1,0 +1,35 @@
+# Source files
+src/**
+test/**
+*.ts
+!dist/**/*.js
+
+# Build artifacts
+**/*.map
+*.vsix
+tsconfig.json
+
+# Test files
+test-*.xml
+TEST-RESULTS.md
+
+# Development files
+.vscode/**
+.vscode-test/**
+.git/**
+.gitignore
+.gitattributes
+.eslintrc.json
+.editorconfig
+.prettierrc
+package-lock.json
+
+# Node modules - exclude everything (we have no runtime dependencies)
+node_modules/**
+
+# Misc
+.DS_Store
+*.log
+npm-debug.log*
+.claude/**
+CLAUDE.md

@@ -236,6 +236,21 @@
           "type": "boolean",
           "default": false,
           "description": "When an element has the configured name attribute, show only the attribute value instead of 'tag (value)'."
+        },
+        "xpathCopier.showInQuickPick": {
+          "type": "boolean",
+          "default": false,
+          "description": "Show the generated XPath in a Quick Pick dialog for manual copy/paste."
+        },
+        "xpathCopier.copyToClipboard": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically copy the generated XPath to the clipboard."
+        },
+        "xpathCopier.openInNewEditor": {
+          "type": "boolean",
+          "default": false,
+          "description": "Open the generated XPath in a new untitled editor window."
         }
       }
     }

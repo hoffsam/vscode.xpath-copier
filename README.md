@@ -41,6 +41,9 @@ Settings can be adjusted in your user or workspace settings under the `xpathCopi
 | `customFormatTemplates`                   | Array of template strings for creating your own XPath formats.            |
 | `nameAttribute`                           | The attribute to use for extracting element names (default `name`).       |
 | `nameOnly`                                | Show only the attribute value instead of `tag (value)` format (default `false`). |
+| `showInQuickPick`                         | Show generated XPath in a Quick Pick dialog for manual copy/paste (default `false`). |
+| `copyToClipboard`                         | Automatically copy generated XPath to clipboard (default `true`).         |
+| `openInNewEditor`                         | Open generated XPath in a new untitled editor (default `false`).          |
 | `enableElementSkipping`                   | Enable skipping specific elements in XPath output (default `false`).     |
 | `skipRules`                               | Array of rules specifying which elements to skip for different file patterns. |
 
@@ -113,6 +116,28 @@ Named Full: /xs:schema/Person/xs:complexType/FirstName
 ```
 
 This feature is particularly useful when working with schema definitions where element names provide clearer navigation paths than technical tag names. Elements without the configured attribute will still display their tag name normally.
+
+### 📤 Output Options
+
+XPath Copier provides flexible output options to control how generated XPaths are delivered to you:
+
+**Configuration Options:**
+
+- **`copyToClipboard`** (default: `true`): Automatically copies the generated XPath to your clipboard for immediate pasting.
+- **`showInQuickPick`** (default: `false`): Displays the XPath in a Quick Pick dialog, allowing you to review it and click to copy again if needed.
+- **`openInNewEditor`** (default: `false`): Opens the generated XPath in a new untitled editor window for further editing or documentation.
+
+**Example Configuration:**
+
+```json
+{
+  "xpathCopier.copyToClipboard": true,
+  "xpathCopier.showInQuickPick": true,
+  "xpathCopier.openInNewEditor": false
+}
+```
+
+These options can be combined - for example, you can enable both clipboard copying and the Quick Pick dialog to have the XPath copied automatically while also being able to review it in a dialog. When `openInNewEditor` is enabled, the XPath opens in a new editor tab, which is useful for creating documentation or sharing XPaths with others.
 
 ### 🧪 Testing
 
