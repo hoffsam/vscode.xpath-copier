@@ -17,3 +17,5 @@ test-sample.xml
 
 # Documentation
 CLAUDE.md
+.vscodeignore
+.gitignore

@@ -2,7 +2,7 @@
   "name": "vscode-xpath-copier",
   "displayName": "XPath Copier",
   "description": "Copy XPaths in various formats from XML/HTML/XHTML files.",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "publisher": "Sammy",
   "engines": {
     "vscode": "^1.80.0"
@@ -205,7 +205,12 @@
           "default": [
             {
               "filePattern": "**/*.xsd",
-              "elementsToSkip": ["xs:sequence", "xs:choice", "xs:any", "xs:all"]
+              "elementsToSkip": [
+                "xs:sequence",
+                "xs:choice",
+                "xs:any",
+                "xs:all"
+              ]
             }
           ],
           "items": {
@@ -223,7 +228,10 @@
                 "description": "Array of element names to skip in XPath output"
               }
             },
-            "required": ["filePattern", "elementsToSkip"]
+            "required": [
+              "filePattern",
+              "elementsToSkip"
+            ]
           },
           "description": "Rules for skipping elements in XPath based on file patterns. Each rule specifies a file pattern and list of element names to omit."
         },
@@ -256,14 +264,17 @@
     }
   },
   "scripts": {
-    "vscode:prepublish": "npm run compile",
-    "compile": "tsc -p ./",
-    "watch": "tsc -watch -p ./",
-    "pretest": "npm run compile",
+    "vscode:prepublish": "npm run esbuild-base -- --production",
+    "esbuild-base": "node esbuild.js",
+    "esbuild": "npm run esbuild-base",
+    "esbuild-watch": "npm run esbuild-base -- --watch",
+    "compile": "npm run esbuild",
+    "watch": "npm run esbuild-watch",
+    "pretest": "tsc -p ./",
     "test": "mocha --require ts-node/register test/formats.test.ts test/element-skipping.test.ts",
     "lint": "echo 'No linter configured'",
     "clean": "rimraf dist",
-    "package": "npm run clean && npm run compile && vsce package",
+    "package": "npm run clean && npm run esbuild-base -- --production && vsce package",
     "build": "npm run package",
     "audit": "npm audit"
   },
@@ -273,6 +284,7 @@
     "@types/node": "^18.0.0",
     "@types/vscode": "^1.80.0",
     "@vscode/vsce": "^3.6.2",
+    "esbuild": "^0.25.10",
     "mocha": "^10.2.0",
     "rimraf": "^6.0.1",
     "ts-node": "^10.9.1",
