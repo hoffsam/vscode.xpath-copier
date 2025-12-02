@@ -1,11 +1,17 @@
 import { strict as assert } from 'assert';
 
 // Import just the format types and builder - these don't depend on vscode
-type XPathFormat = 'full' | 'compact' | 'namesOnly' | 'namedFull' | 'namedCompact' | 'breadcrumb' | 'custom';
+type XPathFormat = 'full' | 'fullNamed' | 'compact' | 'compactNamed' | 'breadcrumbFull' | 'breadcrumbFullNamed' | 'breadcrumbCompact' | 'breadcrumbCompactNamed' | 'namesOnly' | 'namedFull' | 'namedCompact' | 'breadcrumb' | 'custom';
 
 const XPathFormat = {
   Full: 'full' as XPathFormat,
+  FullNamed: 'fullNamed' as XPathFormat,
   Compact: 'compact' as XPathFormat,
+  CompactNamed: 'compactNamed' as XPathFormat,
+  BreadcrumbFull: 'breadcrumbFull' as XPathFormat,
+  BreadcrumbFullNamed: 'breadcrumbFullNamed' as XPathFormat,
+  BreadcrumbCompact: 'breadcrumbCompact' as XPathFormat,
+  BreadcrumbCompactNamed: 'breadcrumbCompactNamed' as XPathFormat,
   NamesOnly: 'namesOnly' as XPathFormat,
   NamedFull: 'namedFull' as XPathFormat,
   NamedCompact: 'namedCompact' as XPathFormat,
@@ -19,50 +25,69 @@ interface SegmentInfo {
   nameAttr?: string;
 }
 
-interface BuildOptions {
-  nameOnly?: boolean;
-}
-
-function buildXPath(segments: SegmentInfo[], format: XPathFormat, options?: BuildOptions): string {
-  const nameOnly = options?.nameOnly || false;
+function buildXPath(segments: SegmentInfo[], format: XPathFormat): string {
+  function escapeXPathString(str: string): string {
+    return str.replace(/'/g, "''");
+  }
 
   switch (format) {
     case XPathFormat.Full:
       return segments.map((seg) => `/${seg.tag}[${seg.index}]`).join('');
+    case XPathFormat.FullNamed:
+      return segments
+        .map((seg) => {
+          if (seg.nameAttr) {
+            return `/${seg.tag}[@name='${escapeXPathString(seg.nameAttr)}']`;
+          }
+          return `/${seg.tag}[${seg.index}]`;
+        })
+        .join('');
     case XPathFormat.Compact:
       return segments
         .map((seg) => `/${seg.tag}${seg.index > 1 ? `[${seg.index}]` : ''}`)
         .join('');
+    case XPathFormat.CompactNamed:
+      return segments.map((seg) => `/${seg.nameAttr || seg.tag}`).join('');
+    case XPathFormat.BreadcrumbFull:
+      return segments
+        .map((seg) => `${seg.tag}[${seg.index}]`)
+        .join(' > ');
+    case XPathFormat.BreadcrumbFullNamed:
+      return segments
+        .map((seg) => {
+          const namePart = seg.nameAttr ? ` (${seg.nameAttr})` : '';
+          return `${seg.tag}${namePart}`;
+        })
+        .join(' > ');
+    case XPathFormat.BreadcrumbCompact:
+      return segments.map((seg) => seg.tag).join(' > ');
+    case XPathFormat.BreadcrumbCompactNamed:
+      return segments.map((seg) => seg.nameAttr || seg.tag).join(' > ');
     case XPathFormat.NamesOnly:
-      return segments.map((seg) => `/${seg.tag}`).join('');
+      return segments.map((seg) => `/${seg.nameAttr || seg.tag}`).join('');
     case XPathFormat.NamedFull:
+      // Legacy: behaves like FullNamed
       return segments
         .map((seg) => {
           if (seg.nameAttr) {
-            return nameOnly ? `/${seg.nameAttr}` : `/${seg.tag}[@name='${seg.nameAttr.replace(/'/g, "''")}']`;
+            return `/${seg.nameAttr}`;
           }
           return seg.index > 1 ? `/${seg.tag}[${seg.index}]` : `/${seg.tag}`;
         })
         .join('');
     case XPathFormat.NamedCompact:
+      // Legacy: behaves like CompactNamed
       return segments
         .map((seg) => {
           if (seg.nameAttr) {
-            return nameOnly ? `/${seg.nameAttr}` : `/${seg.tag}[@name='${seg.nameAttr.replace(/'/g, "''")}']`;
+            return `/${seg.nameAttr}`;
           }
           return seg.index > 1 ? `/${seg.tag}[${seg.index}]` : `/${seg.tag}`;
         })
         .join('');
     case XPathFormat.Breadcrumb:
-      return segments
-        .map((seg) => {
-          if (nameOnly && seg.nameAttr) {
-            return seg.nameAttr;
-          }
-          const namePart = seg.nameAttr ? ` (${seg.nameAttr})` : '';
-          return `${seg.tag}${namePart}`;
-        })
-        .join(' > ');
+      // Legacy: behaves like BreadcrumbCompactNamed
+      return segments.map((seg) => seg.nameAttr || seg.tag).join(' > ');
     default:
       return segments.map((seg) => `/${seg.tag}`).join('');
   }
@@ -108,22 +133,22 @@ describe('XPath Format Generation', () => {
 
   it('generates NamesOnly format correctly', () => {
     const result = buildXPath(segments, XPathFormat.NamesOnly);
-    assert.equal(result, '/Project/EntityDefs/EntityDef/Attributes/Attribute');
+    assert.equal(result, '/Project/EntityDefs/Doc/Attributes/TurnoverName');
   });
 
-  it('generates NamedFull format correctly', () => {
+  it('generates legacy NamedFull format (now behaves like FullNamed)', () => {
     const result = buildXPath(segments, XPathFormat.NamedFull);
-    assert.equal(result, "/Project/EntityDefs/EntityDef[@name='Doc']/Attributes/Attribute[@name='TurnoverName']");
+    assert.equal(result, '/Project/EntityDefs/Doc/Attributes/TurnoverName');
   });
 
-  it('generates NamedCompact format correctly', () => {
+  it('generates legacy NamedCompact format (now behaves like CompactNamed)', () => {
     const result = buildXPath(segments, XPathFormat.NamedCompact);
-    assert.equal(result, "/Project/EntityDefs/EntityDef[@name='Doc']/Attributes/Attribute[@name='TurnoverName']");
+    assert.equal(result, '/Project/EntityDefs/Doc/Attributes/TurnoverName');
   });
 
-  it('generates Breadcrumb format correctly', () => {
+  it('generates legacy Breadcrumb format (now behaves like BreadcrumbCompactNamed)', () => {
     const result = buildXPath(segments, XPathFormat.Breadcrumb);
-    assert.equal(result, 'Project > EntityDefs > EntityDef (Doc) > Attributes > Attribute (TurnoverName)');
+    assert.equal(result, 'Project > EntityDefs > Doc > Attributes > TurnoverName');
   });
 
   it('parses XPath with indexes correctly', () => {
@@ -189,22 +214,22 @@ describe('XPath Name Only Feature', () => {
     { tag: 'Attribute', index: 2, nameAttr: 'TurnoverName' }
   ];
 
-  it('generates NamedFull with nameOnly showing only name values', () => {
-    const result = buildXPath(segments, XPathFormat.NamedFull, { nameOnly: true });
+  it('generates legacy NamedFull format (now always shows name values)', () => {
+    const result = buildXPath(segments, XPathFormat.NamedFull);
     assert.equal(result, '/Project/EntityDefs/Doc/Attributes/TurnoverName');
   });
 
-  it('generates NamedCompact with nameOnly showing only name values', () => {
-    const result = buildXPath(segments, XPathFormat.NamedCompact, { nameOnly: true });
+  it('generates legacy NamedCompact format (now always shows name values)', () => {
+    const result = buildXPath(segments, XPathFormat.NamedCompact);
     assert.equal(result, '/Project/EntityDefs/Doc/Attributes/TurnoverName');
   });
 
-  it('generates Breadcrumb with nameOnly showing only name values', () => {
-    const result = buildXPath(segments, XPathFormat.Breadcrumb, { nameOnly: true });
+  it('generates legacy Breadcrumb format (now always shows name values)', () => {
+    const result = buildXPath(segments, XPathFormat.Breadcrumb);
     assert.equal(result, 'Project > EntityDefs > Doc > Attributes > TurnoverName');
   });
 
-  it('handles mixed elements with and without names', () => {
+  it('legacy Breadcrumb handles mixed elements with and without names', () => {
     const mixedSegments: SegmentInfo[] = [
       { tag: 'xs:schema', index: 1 },
       { tag: 'xs:element', index: 1, nameAttr: 'Person' },
@@ -212,32 +237,85 @@ describe('XPath Name Only Feature', () => {
       { tag: 'xs:element', index: 2, nameAttr: 'FirstName' }
     ];
 
-    const result = buildXPath(mixedSegments, XPathFormat.Breadcrumb, { nameOnly: true });
+    const result = buildXPath(mixedSegments, XPathFormat.Breadcrumb);
     assert.equal(result, 'xs:schema > Person > xs:complexType > FirstName');
   });
 
-  it('handles nameOnly with elements that have no name attribute', () => {
+  it('legacy Breadcrumb handles elements without name attributes', () => {
     const noNameSegments: SegmentInfo[] = [
       { tag: 'root', index: 1 },
       { tag: 'item', index: 3 }
     ];
 
-    const result = buildXPath(noNameSegments, XPathFormat.Breadcrumb, { nameOnly: true });
+    const result = buildXPath(noNameSegments, XPathFormat.Breadcrumb);
     assert.equal(result, 'root > item');
   });
 
-  it('nameOnly does not affect Full format', () => {
-    const result = buildXPath(segments, XPathFormat.Full, { nameOnly: true });
+  it('Full format is not affected by legacy formats', () => {
+    const result = buildXPath(segments, XPathFormat.Full);
     assert.equal(result, '/Project[1]/EntityDefs[1]/EntityDef[1]/Attributes[1]/Attribute[2]');
   });
 
-  it('nameOnly does not affect Compact format', () => {
-    const result = buildXPath(segments, XPathFormat.Compact, { nameOnly: true });
+  it('Compact format is not affected by legacy formats', () => {
+    const result = buildXPath(segments, XPathFormat.Compact);
     assert.equal(result, '/Project/EntityDefs/EntityDef/Attributes/Attribute[2]');
   });
 
-  it('nameOnly does not affect NamesOnly format', () => {
-    const result = buildXPath(segments, XPathFormat.NamesOnly, { nameOnly: true });
-    assert.equal(result, '/Project/EntityDefs/EntityDef/Attributes/Attribute');
+  it('NamesOnly format behaves consistently', () => {
+    const result = buildXPath(segments, XPathFormat.NamesOnly);
+    assert.equal(result, '/Project/EntityDefs/Doc/Attributes/TurnoverName');
+  });
+});
+
+describe('New XPath Formats', () => {
+  const segments: SegmentInfo[] = [
+    { tag: 'App', index: 1, nameAttr: 'kahua_aec_rfi_extension' },
+    { tag: 'WorkflowDefs', index: 1 },
+    { tag: 'WorkflowDef', index: 1, nameAttr: 'BasicWorkflow' },
+    { tag: 'Resources', index: 1 },
+    { tag: 'App.Reports', index: 1 },
+    { tag: 'LegacyReport', index: 1, nameAttr: 'RFITaskViewReport' },
+    { tag: 'LegacyReport.ReportXml', index: 1, nameAttr: 'RFITaskViewReport' },
+    { tag: 'Designer', index: 1 }
+  ];
+
+  it('generates Full format correctly', () => {
+    const result = buildXPath(segments, XPathFormat.Full);
+    assert.equal(result, '/App[1]/WorkflowDefs[1]/WorkflowDef[1]/Resources[1]/App.Reports[1]/LegacyReport[1]/LegacyReport.ReportXml[1]/Designer[1]');
+  });
+
+  it('generates FullNamed format correctly', () => {
+    const result = buildXPath(segments, XPathFormat.FullNamed);
+    assert.equal(result, "/App[@name='kahua_aec_rfi_extension']/WorkflowDefs[1]/WorkflowDef[@name='BasicWorkflow']/Resources[1]/App.Reports[1]/LegacyReport[@name='RFITaskViewReport']/LegacyReport.ReportXml[@name='RFITaskViewReport']/Designer[1]");
+  });
+
+  it('generates Compact format correctly', () => {
+    const result = buildXPath(segments, XPathFormat.Compact);
+    assert.equal(result, '/App/WorkflowDefs/WorkflowDef/Resources/App.Reports/LegacyReport/LegacyReport.ReportXml/Designer');
+  });
+
+  it('generates CompactNamed format correctly', () => {
+    const result = buildXPath(segments, XPathFormat.CompactNamed);
+    assert.equal(result, '/kahua_aec_rfi_extension/WorkflowDefs/BasicWorkflow/Resources/App.Reports/RFITaskViewReport/RFITaskViewReport/Designer');
+  });
+
+  it('generates BreadcrumbFull format correctly', () => {
+    const result = buildXPath(segments, XPathFormat.BreadcrumbFull);
+    assert.equal(result, 'App[1] > WorkflowDefs[1] > WorkflowDef[1] > Resources[1] > App.Reports[1] > LegacyReport[1] > LegacyReport.ReportXml[1] > Designer[1]');
+  });
+
+  it('generates BreadcrumbFullNamed format correctly', () => {
+    const result = buildXPath(segments, XPathFormat.BreadcrumbFullNamed);
+    assert.equal(result, 'App (kahua_aec_rfi_extension) > WorkflowDefs > WorkflowDef (BasicWorkflow) > Resources > App.Reports > LegacyReport (RFITaskViewReport) > LegacyReport.ReportXml (RFITaskViewReport) > Designer');
+  });
+
+  it('generates BreadcrumbCompact format correctly', () => {
+    const result = buildXPath(segments, XPathFormat.BreadcrumbCompact);
+    assert.equal(result, 'App > WorkflowDefs > WorkflowDef > Resources > App.Reports > LegacyReport > LegacyReport.ReportXml > Designer');
+  });
+
+  it('generates BreadcrumbCompactNamed format correctly', () => {
+    const result = buildXPath(segments, XPathFormat.BreadcrumbCompactNamed);
+    assert.equal(result, 'kahua_aec_rfi_extension > WorkflowDefs > BasicWorkflow > Resources > App.Reports > RFITaskViewReport > RFITaskViewReport > Designer');
   });
 });

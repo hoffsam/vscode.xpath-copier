@@ -1,7 +1,12 @@
 const esbuild = require('esbuild');
 
-const production = process.argv.includes('--production');
+// Check for flags in process.argv
+const production = process.argv.includes('--production') || process.env.NODE_ENV === 'production';
 const watch = process.argv.includes('--watch');
+
+console.log(`Building in ${production ? 'PRODUCTION' : 'DEVELOPMENT'} mode`);
+console.log(`Source maps: ${!production ? 'ENABLED' : 'DISABLED'}`);
+console.log(`Minification: ${production ? 'ENABLED' : 'DISABLED'}`);
 
 async function main() {
   const ctx = await esbuild.context({
@@ -23,6 +28,7 @@ async function main() {
   } else {
     await ctx.rebuild();
     await ctx.dispose();
+    console.log('Build complete!');
   }
 }
 

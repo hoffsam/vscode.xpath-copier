@@ -34,3 +34,7 @@ node_modules/**
 npm-debug.log*
 .claude/**
 CLAUDE.md
+agents.md
+test-schema.xsd
+CHANGES.md
+BUILD-DONFIG.md

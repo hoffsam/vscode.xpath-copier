@@ -15,29 +15,87 @@ import { findElementByXPath } from './xmlParser';
  * commands here and perform runtime checks for document symbols when needed.
  */
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
-  console.log('XPath Copier: Extension activating');
+  // console.log('XPath Copier: Extension activating');
   // Extension now activates and registers commands.
   // Runtime checks for document symbols will be done when commands are executed.
 
   /**
-   * Helper to register a simple copy command bound to a specific format.
+   * Update context for skip rules availability based on current document
    */
-  function registerCopyCommand(cmd: string, fmt: XPathFormat) {
-    console.log(`XPath Copier: Registering command ${cmd}`);
+  function updateSkipRulesContext() {
+    const editor = vscode.window.activeTextEditor;
+    if (!editor) {
+      vscode.commands.executeCommand('setContext', 'xpathCopier.hasApplicableSkipRules', false);
+      return;
+    }
+
+    const document = editor.document;
+    const config = vscode.workspace.getConfiguration('xpathCopier');
+    const enableSkipping: boolean = config.get('enableElementSkipping', false);
+    const allSkipRules: SkipRule[] = config.get('skipRules', []);
+
+    if (!enableSkipping || allSkipRules.length === 0) {
+      vscode.commands.executeCommand('setContext', 'xpathCopier.hasApplicableSkipRules', false);
+      return;
+    }
+
+    const applicableSkipRules = matchSkipRules(document.uri.fsPath, allSkipRules);
+    const hasRules = applicableSkipRules.length > 0;
+    vscode.commands.executeCommand('setContext', 'xpathCopier.hasApplicableSkipRules', hasRules);
+  }
+
+  // Update context on activation
+  updateSkipRulesContext();
+
+  // Update context when active editor changes
+  context.subscriptions.push(
+    vscode.window.onDidChangeActiveTextEditor(() => {
+      updateSkipRulesContext();
+    })
+  );
+
+  // Update context when configuration changes
+  context.subscriptions.push(
+    vscode.workspace.onDidChangeConfiguration(e => {
+      if (e.affectsConfiguration('xpathCopier.enableElementSkipping') || 
+          e.affectsConfiguration('xpathCopier.skipRules')) {
+        updateSkipRulesContext();
+      }
+    })
+  );
+
+  /**
+   * Helper to register a copy command bound to a specific format and options.
+   */
+  function registerCopyCommand(cmd: string, fmt: XPathFormat, enableSkip: boolean = false) {
+    // console.log(`XPath Copier: Registering command ${cmd}`);
     const disposable = vscode.commands.registerCommand(cmd, async () => {
-      console.log(`XPath Copier: Command ${cmd} executed`);
-      await copyXPaths(fmt);
+      // console.log(`XPath Copier: Command ${cmd} executed`);
+      await copyXPaths(fmt, enableSkip);
     });
     context.subscriptions.push(disposable);
   }
 
-  // Register copy commands for each built‑in format
-  registerCopyCommand('xpathCopier.copyXPathFull', XPathFormat.Full);
-  registerCopyCommand('xpathCopier.copyXPathCompact', XPathFormat.Compact);
-  registerCopyCommand('xpathCopier.copyXPathNamesOnly', XPathFormat.NamesOnly);
-  registerCopyCommand('xpathCopier.copyXPathNamedFull', XPathFormat.NamedFull);
-  registerCopyCommand('xpathCopier.copyXPathNamedCompact', XPathFormat.NamedCompact);
-  registerCopyCommand('xpathCopier.copyXPathBreadcrumb', XPathFormat.Breadcrumb);
+  // Register copy commands for all format combinations
+  // Non-skipping variants
+  registerCopyCommand('xpathCopier.copyXPathBreadcrumbFull', XPathFormat.BreadcrumbFull, false);
+  registerCopyCommand('xpathCopier.copyXPathBreadcrumbFullNamesOnly', XPathFormat.BreadcrumbFullNamed, false);
+  registerCopyCommand('xpathCopier.copyXPathBreadcrumbCompact', XPathFormat.BreadcrumbCompact, false);
+  registerCopyCommand('xpathCopier.copyXPathBreadcrumbCompactNamesOnly', XPathFormat.BreadcrumbCompactNamed, false);
+  registerCopyCommand('xpathCopier.copyXPathFull', XPathFormat.Full, false);
+  registerCopyCommand('xpathCopier.copyXPathFullNamesOnly', XPathFormat.FullNamed, false); 
+  registerCopyCommand('xpathCopier.copyXPathCompact', XPathFormat.Compact, false);
+  registerCopyCommand('xpathCopier.copyXPathCompactNamesOnly', XPathFormat.CompactNamed, false);
+  
+  // Skipping variants
+  registerCopyCommand('xpathCopier.copyXPathBreadcrumbFullSkip', XPathFormat.BreadcrumbFull, true);
+  registerCopyCommand('xpathCopier.copyXPathBreadcrumbFullNamesOnlySkip', XPathFormat.BreadcrumbFullNamed, true);
+  registerCopyCommand('xpathCopier.copyXPathBreadcrumbCompactSkip', XPathFormat.BreadcrumbCompact, true);
+  registerCopyCommand('xpathCopier.copyXPathBreadcrumbCompactNamesOnlySkip', XPathFormat.BreadcrumbCompactNamed, true);
+  registerCopyCommand('xpathCopier.copyXPathFullSkip', XPathFormat.Full, true);
+  registerCopyCommand('xpathCopier.copyXPathFullNamesOnlySkip', XPathFormat.FullNamed, true);
+  registerCopyCommand('xpathCopier.copyXPathCompactSkip', XPathFormat.Compact, true);
+  registerCopyCommand('xpathCopier.copyXPathCompactNamesOnlySkip', XPathFormat.CompactNamed, true);
 
   // Unified QuickPick command
   const quickPickDisposable = vscode.commands.registerCommand(
@@ -57,7 +115,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   );
   context.subscriptions.push(reverseDisposable);
   
-  console.log('XPath Copier: Extension activation completed');
+  // console.log('XPath Copier: Extension activation completed');
 }
 
 /**
@@ -135,11 +193,11 @@ async function handleXPathOutput(output: string, resultCount: number): Promise<v
  * multi‑cursor selection, clipboard writing and optionally shows a peek
  * window to provide context.
  */
-async function copyXPaths(format: XPathFormat): Promise<void> {
-  console.log(`XPath Copier: copyXPaths called with format: ${format}`);
+async function copyXPaths(format: XPathFormat, forceSkipping: boolean = false): Promise<void> {
+  // console.log(`XPath Copier: copyXPaths called with format: ${format}`);
   const editor = vscode.window.activeTextEditor;
   if (!editor) {
-    console.log('XPath Copier: No active editor');
+    // console.log('XPath Copier: No active editor');
     vscode.window.showWarningMessage('No active editor');
     return;
   }
@@ -151,12 +209,11 @@ async function copyXPaths(format: XPathFormat): Promise<void> {
   const enableFormats: { [key: string]: boolean } = config.get('enableFormats', {} as any);
 
   // Read element skipping configuration
-  const enableSkipping: boolean = config.get('enableElementSkipping', false);
+  const enableSkipping: boolean = forceSkipping || config.get('enableElementSkipping', false);
   const allSkipRules: SkipRule[] = config.get('skipRules', []);
 
   // Read name attribute configuration
-  const nameAttribute: string = config.get('nameAttribute', 'name');
-  const nameOnly: boolean = config.get('nameOnly', false);
+  const nameAttributes: string[] = config.get('nameAttributes', ['name']);
 
   // Match skip rules against current document path
   const applicableSkipRules = enableSkipping
@@ -168,8 +225,8 @@ async function copyXPaths(format: XPathFormat): Promise<void> {
     vscode.window.showWarningMessage(`The ${format} format is disabled in settings.`);
     return;
   }
-  console.log(`XPath Copier: Document language: ${document.languageId}, selections: ${selections.length}`);
-  console.log(`XPath Copier: Element skipping enabled: ${enableSkipping}, applicable rules: ${applicableSkipRules.length}`);
+  // console.log(`XPath Copier: Document language: ${document.languageId}, selections: ${selections.length}`);
+  // console.log(`XPath Copier: Element skipping enabled: ${enableSkipping}, applicable rules: ${applicableSkipRules.length}`);
 
   await vscode.window.withProgress({
     location: vscode.ProgressLocation.Window,
@@ -179,20 +236,19 @@ async function copyXPaths(format: XPathFormat): Promise<void> {
     const results: string[] = [];
     for (const sel of selections) {
       const pos = sel.active;
-      console.log(`XPath Copier: Computing XPath for position: line ${pos.line}, char ${pos.character}`);
+      // console.log(`XPath Copier: Computing XPath for position: line ${pos.line}, char ${pos.character}`);
       const xpath = await computeXPathForPosition(document, pos, format, {
         customTemplates,
         skipRules: applicableSkipRules,
         enableSkipping,
-        nameAttribute,
-        nameOnly
+        nameAttributes
       });
-      console.log(`XPath Copier: Computed XPath: ${xpath}`);
+      // console.log(`XPath Copier: Computed XPath: ${xpath}`);
       if (xpath) {
         results.push(xpath);
       }
     }
-    console.log(`XPath Copier: Results: ${results.length} XPaths computed`);
+    // console.log(`XPath Copier: Results: ${results.length} XPaths computed`);
     if (results.length === 0) {
       vscode.window.showWarningMessage('Unable to compute XPath for the current selection.');
       return;
@@ -207,58 +263,72 @@ async function copyXPaths(format: XPathFormat): Promise<void> {
         output = results.join('\n');
       }
     }
-    console.log(`XPath Copier: Generated output: ${output}`);
+    // console.log(`XPath Copier: Generated output: ${output}`);
     await handleXPathOutput(output, results.length);
   });
 }
 
 /**
- * Present a QuickPick listing all enabled formats and any custom templates.
- * The user's selection will determine which XPath string is generated.
+ * Present a QuickPick listing all enabled formats organized into sections.
+ * Shows normal commands and optionally "with skipping" commands if applicable.
  */
 async function showQuickPick(): Promise<void> {
   const editor = vscode.window.activeTextEditor;
   if (!editor) {
     return;
   }
+  const document = editor.document;
   const config = vscode.workspace.getConfiguration('xpathCopier');
-  const enableFormats: { [key: string]: boolean } = config.get('enableFormats', {} as any);
-  const customTemplates: string[] = config.get('customFormatTemplates', []);
-  // Build items for built‑in formats
-  const items: Array<vscode.QuickPickItem & { format?: XPathFormat; template?: string }> = [];
-  const pushIfEnabled = (fmt: XPathFormat, label: string) => {
-    if (!enableFormats || enableFormats[fmt] !== false) {
-      items.push({ label, format: fmt });
-    }
-  };
-  pushIfEnabled(XPathFormat.Full, 'Full');
-  pushIfEnabled(XPathFormat.Compact, 'Compact');
-  pushIfEnabled(XPathFormat.NamesOnly, 'Names Only');
-  pushIfEnabled(XPathFormat.NamedFull, 'Named Full');
-  pushIfEnabled(XPathFormat.NamedCompact, 'Named Compact');
-  pushIfEnabled(XPathFormat.Breadcrumb, 'Breadcrumb');
-  // Add custom templates as additional items
-  if (customTemplates && customTemplates.length > 0) {
-    customTemplates.forEach((tmpl, index) => {
-      const label = `Custom ${index + 1}`;
-      const description = tmpl;
-      items.push({ label, description, format: XPathFormat.Custom, template: tmpl });
-    });
+  const enableSkipping: boolean = config.get('enableElementSkipping', false);
+  const allSkipRules: SkipRule[] = config.get('skipRules', []);
+  
+  // Check if current document matches any skip rules
+  const applicableSkipRules = enableSkipping 
+    ? matchSkipRules(document.uri.fsPath, allSkipRules)
+    : [];
+  const showSkipCommands = applicableSkipRules.length > 0;
+
+  interface PickItem extends vscode.QuickPickItem {
+    format?: XPathFormat;
+    skipEnabled?: boolean;
   }
+
+  const items: PickItem[] = [];
+
+  // Non-skipping commands
+  items.push({ label: 'Breadcrumb - Full', format: XPathFormat.BreadcrumbFull, skipEnabled: false });
+  items.push({ label: 'Breadcrumb - Full - Names Only', format: XPathFormat.BreadcrumbFullNamed, skipEnabled: false });
+  items.push({ label: 'Breadcrumb - Compact', format: XPathFormat.BreadcrumbCompact, skipEnabled: false });
+  items.push({ label: 'Breadcrumb - Compact - Names Only', format: XPathFormat.BreadcrumbCompactNamed, skipEnabled: false });
+  items.push({ label: 'Full', format: XPathFormat.Full, skipEnabled: false });
+  items.push({ label: 'Full - Names Only', format: XPathFormat.FullNamed, skipEnabled: false });
+  items.push({ label: 'Compact', format: XPathFormat.Compact, skipEnabled: false });
+  items.push({ label: 'Compact - Names Only', format: XPathFormat.CompactNamed, skipEnabled: false });
+
+  // Add skipping commands if applicable
+  if (showSkipCommands) {
+    items.push({ label: '', kind: vscode.QuickPickItemKind.Separator });
+    items.push({ label: 'w/ skipping: Breadcrumb - Full', format: XPathFormat.BreadcrumbFull, skipEnabled: true });
+    items.push({ label: 'w/ skipping: Breadcrumb - Full - Names Only', format: XPathFormat.BreadcrumbFullNamed, skipEnabled: true });
+    items.push({ label: 'w/ skipping: Breadcrumb - Compact', format: XPathFormat.BreadcrumbCompact, skipEnabled: true });
+    items.push({ label: 'w/ skipping: Breadcrumb - Compact - Names Only', format: XPathFormat.BreadcrumbCompactNamed, skipEnabled: true });
+    items.push({ label: 'w/ skipping: Full', format: XPathFormat.Full, skipEnabled: true });
+    items.push({ label: 'w/ skipping: Full - Names Only', format: XPathFormat.FullNamed, skipEnabled: true });
+    items.push({ label: 'w/ skipping: Compact', format: XPathFormat.Compact, skipEnabled: true });
+    items.push({ label: 'w/ skipping: Compact - Names Only', format: XPathFormat.CompactNamed, skipEnabled: true });
+  }
+
   const pick = await vscode.window.showQuickPick(items, {
     placeHolder: 'Select XPath format',
     canPickMany: false
   });
-  if (!pick) {
+
+  if (!pick || pick.kind === vscode.QuickPickItemKind.Separator) {
     return;
   }
-  // Determine chosen format and optionally override custom template order
-  if (pick.format === XPathFormat.Custom && pick.template) {
-    // Temporarily put chosen template at front of array so computeXPath uses it
-    const allTemplates: string[] = [pick.template];
-    await copyXPathsCustom(allTemplates);
-  } else if (pick.format) {
-    await copyXPaths(pick.format);
+
+  if (pick.format) {
+    await copyXPaths(pick.format, pick.skipEnabled || false);
   }
 }
 
@@ -274,8 +344,7 @@ async function copyXPathsCustom(customTemplates: string[]): Promise<void> {
   const document = editor.document;
   const selections = editor.selections;
   const config = vscode.workspace.getConfiguration('xpathCopier');
-  const nameAttribute: string = config.get('nameAttribute', 'name');
-  const nameOnly: boolean = config.get('nameOnly', false);
+  const nameAttributes: string[] = config.get('nameAttributes', ['name']);
   const multicursorFormat: string = config.get('multicursorFormat', 'lines');
 
   await vscode.window.withProgress({
@@ -288,8 +357,7 @@ async function copyXPathsCustom(customTemplates: string[]): Promise<void> {
       const pos = sel.active;
       const xpath = await computeXPathForPosition(document, pos, XPathFormat.Custom, {
         customTemplates,
-        nameAttribute,
-        nameOnly
+        nameAttributes
       });
       if (xpath) {
         results.push(xpath);
@@ -305,7 +373,7 @@ async function copyXPathsCustom(customTemplates: string[]): Promise<void> {
     } else {
       output = multicursorFormat === 'json' ? JSON.stringify(results, null, 2) : results.join('\n');
     }
-    console.log(`XPath Copier: Generated output: ${output}`);
+    // console.log(`XPath Copier: Generated output: ${output}`);
     await handleXPathOutput(output, results.length);
   });
 }

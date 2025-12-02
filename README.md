@@ -12,7 +12,7 @@ Six built‑in formats are supported:
 |-----------------|---------------------------------------------------------------------------------------------------------------|
 | **Full**        | `/Project/EntityDefs/EntityDef[1]/Attributes/Attribute[2]`                                                    |
 | **Compact**     | `/Project/EntityDefs/EntityDef/Attributes/Attribute[2]`                                                      |
-| **Names Only**  | `/Project/EntityDefs/EntityDef/Attributes/Attribute`                                                         |
+| **Names Only**  | `/Project/EntityDefs/Doc/Attributes/TurnoverName`                                                            |
 | **Named Full**  | `/Project/EntityDefs/EntityDef[@name='Doc']/Attributes/Attribute[@name='TurnoverName']`                      |
 | **Named Compact** | `/Project/EntityDefs/EntityDef[@name='Doc']/Attributes/Attribute[@name='TurnoverName']`                   |
 | **Breadcrumb**  | `Project > EntityDefs > EntityDef (Doc) > Attributes > Attribute (TurnoverName)`                             |
@@ -34,13 +34,13 @@ Settings can be adjusted in your user or workspace settings under the `xpathCopi
 | Setting                                   | Description                                                                |
 |-------------------------------------------|----------------------------------------------------------------------------|
 | `enableContextMenu`                       | Show commands in the editor context menu (default `true`).                |
+| `enableCommands`                          | Enable or disable specific commands and menu items individually.          |
 | `languages`                               | An array of language IDs that activate the extension (`xml`, `html`, `xhtml` by default). |
 | `enableQuickPick`                         | Enables the unified Quick Pick for choosing a format (default `true`).    |
 | `enableFormats.full|compact|…`            | Toggle individual formats on or off.                                      |
 | `multicursorFormat`                       | How to present multiple XPaths (`lines` or `json`).                       |
 | `customFormatTemplates`                   | Array of template strings for creating your own XPath formats.            |
-| `nameAttribute`                           | The attribute to use for extracting element names (default `name`).       |
-| `nameOnly`                                | Show only the attribute value instead of `tag (value)` format (default `false`). |
+| `nameAttributes`                          | List of attributes to check for element names, in order of preference (default `['name']`). |
 | `showInQuickPick`                         | Show generated XPath in a Quick Pick dialog for manual copy/paste (default `false`). |
 | `copyToClipboard`                         | Automatically copy generated XPath to clipboard (default `true`).         |
 | `openInNewEditor`                         | Open generated XPath in a new untitled editor (default `false`).          |
@@ -87,32 +87,42 @@ Each skip rule consists of:
 
 ### 🏷️ Name Attribute Configuration
 
-By default, XPath Copier looks for the `name` attribute on XML elements to provide more meaningful XPath expressions. You can customize which attribute to use and how it's displayed.
+By default, XPath Copier looks for the `name` attribute on XML elements to provide more meaningful XPath expressions. You can customize which attributes to check for element identification.
 
 **Configuration Options:**
 
-- **`nameAttribute`** (default: `"name"`): Specifies which attribute to extract from elements. You can change this to any attribute like `id`, `key`, `ref`, etc.
-- **`nameOnly`** (default: `false`): When enabled, shows only the attribute value instead of the `tag (value)` format.
+- **`nameAttributes`** (default: `["name"]`): A list of attributes to check for element names, in order of preference (e.g., `['name', 'id', 'label']`). The first matching attribute found will be used.
 
 **Example Configuration:**
 
 ```json
 {
-  "xpathCopier.nameAttribute": "name",
-  "xpathCopier.nameOnly": true
+  "xpathCopier.nameAttributes": ["name", "id", "key"]
 }
 ```
 
-**Example with `nameOnly: false` (default):**
-```
-Breadcrumb: xs:schema > xs:element (Person) > xs:complexType > xs:element (FirstName)
-Named Full: /xs:schema/xs:element[@name='Person']/xs:complexType/xs:element[@name='FirstName']
-```
+**Format Behavior:**
 
-**Example with `nameOnly: true`:**
+Different formats use name attributes differently:
+
+- **Breadcrumb - Full**: Shows both tag and name: `xs:element (Person)`
+- **Breadcrumb - Full - Names Only**: Shows name attribute values: `Person`
+- **Breadcrumb - Compact**: Shows only tags: `xs:element`
+- **Breadcrumb - Compact - Names Only**: Shows name attribute values: `Person`
+- **Full**: XPath with indexes: `/xs:element[1]`
+- **Full - Names Only**: Uses name as element identifier: `/Person`
+- **Compact**: XPath omitting [1]: `/xs:element`
+- **Compact - Names Only**: Uses name as element identifier: `/Person`
+
+**Example Output:**
+
+Given element: `<xs:element name="Person">`
+
 ```
-Breadcrumb: xs:schema > Person > xs:complexType > FirstName
-Named Full: /xs:schema/Person/xs:complexType/FirstName
+Full:                    /xs:schema[1]/xs:element[1]
+Full - Names Only:       /xs:schema/Person
+Breadcrumb - Full:       xs:schema[1] > xs:element (Person)
+Breadcrumb - Full - Names Only: xs:schema > Person
 ```
 
 This feature is particularly useful when working with schema definitions where element names provide clearer navigation paths than technical tag names. Elements without the configured attribute will still display their tag name normally.

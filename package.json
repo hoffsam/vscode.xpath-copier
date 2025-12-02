@@ -2,7 +2,7 @@
   "name": "vscode-xpath-copier",
   "displayName": "XPath Copier",
   "description": "Copy XPaths in various formats from XML/HTML/XHTML files.",
-  "version": "1.2.1",
+  "version": "1.3.0",
   "publisher": "Sammy",
   "engines": {
     "vscode": "^1.80.0"
@@ -14,42 +14,74 @@
   "activationEvents": [
     "onLanguage:xml",
     "onLanguage:html",
-    "onLanguage:xhtml",
-    "onCommand:xpathCopier.copyXPathFull",
-    "onCommand:xpathCopier.copyXPathCompact",
-    "onCommand:xpathCopier.copyXPathNamesOnly",
-    "onCommand:xpathCopier.copyXPathNamedFull",
-    "onCommand:xpathCopier.copyXPathNamedCompact",
-    "onCommand:xpathCopier.copyXPathBreadcrumb",
-    "onCommand:xpathCopier.copyXPathQuickPick",
-    "onCommand:xpathCopier.copyXPathReverse"
+    "onLanguage:xhtml"
   ],
   "main": "./dist/extension.js",
   "contributes": {
     "commands": [
       {
+        "command": "xpathCopier.copyXPathBreadcrumbFull",
+        "title": "XPath: Copy (Breadcrumb - Full)"
+      },
+      {
+        "command": "xpathCopier.copyXPathBreadcrumbFullNamesOnly",
+        "title": "XPath: Copy (Breadcrumb - Full - Names Only)"
+      },
+      {
+        "command": "xpathCopier.copyXPathBreadcrumbCompact",
+        "title": "XPath: Copy (Breadcrumb - Compact)"
+      },
+      {
+        "command": "xpathCopier.copyXPathBreadcrumbCompactNamesOnly",
+        "title": "XPath: Copy (Breadcrumb - Compact - Names Only)"
+      },
+      {
         "command": "xpathCopier.copyXPathFull",
         "title": "XPath: Copy (Full)"
+      },
+      {
+        "command": "xpathCopier.copyXPathFullNamesOnly",
+        "title": "XPath: Copy (Full - Names Only)"
       },
       {
         "command": "xpathCopier.copyXPathCompact",
         "title": "XPath: Copy (Compact)"
       },
       {
-        "command": "xpathCopier.copyXPathNamesOnly",
-        "title": "XPath: Copy (Names Only)"
+        "command": "xpathCopier.copyXPathCompactNamesOnly",
+        "title": "XPath: Copy (Compact - Names Only)"
       },
       {
-        "command": "xpathCopier.copyXPathNamedFull",
-        "title": "XPath: Copy (Named Full)"
+        "command": "xpathCopier.copyXPathBreadcrumbFullSkip",
+        "title": "XPath: Copy w/ skipping (Breadcrumb - Full)"
       },
       {
-        "command": "xpathCopier.copyXPathNamedCompact",
-        "title": "XPath: Copy (Named Compact)"
+        "command": "xpathCopier.copyXPathBreadcrumbFullNamesOnlySkip",
+        "title": "XPath: Copy w/ skipping (Breadcrumb - Full - Names Only)"
       },
       {
-        "command": "xpathCopier.copyXPathBreadcrumb",
-        "title": "XPath: Copy (Breadcrumb)"
+        "command": "xpathCopier.copyXPathBreadcrumbCompactSkip",
+        "title": "XPath: Copy w/ skipping (Breadcrumb - Compact)"
+      },
+      {
+        "command": "xpathCopier.copyXPathBreadcrumbCompactNamesOnlySkip",
+        "title": "XPath: Copy w/ skipping (Breadcrumb - Compact - Names Only)"
+      },
+      {
+        "command": "xpathCopier.copyXPathFullSkip",
+        "title": "XPath: Copy w/ skipping (Full)"
+      },
+      {
+        "command": "xpathCopier.copyXPathFullNamesOnlySkip",
+        "title": "XPath: Copy w/ skipping (Full - Names Only)"
+      },
+      {
+        "command": "xpathCopier.copyXPathCompactSkip",
+        "title": "XPath: Copy w/ skipping (Compact)"
+      },
+      {
+        "command": "xpathCopier.copyXPathCompactNamesOnlySkip",
+        "title": "XPath: Copy w/ skipping (Compact - Names Only)"
       },
       {
         "command": "xpathCopier.copyXPathQuickPick",
@@ -76,28 +108,94 @@
       ],
       "xpath": [
         {
-          "command": "xpathCopier.copyXPathFull"
+          "command": "xpathCopier.copyXPathBreadcrumbFull",
+          "group": "1_noSkip@1",
+          "when": "config.xpathCopier.enableCommands.breadcrumbFull"
         },
         {
-          "command": "xpathCopier.copyXPathCompact"
+          "command": "xpathCopier.copyXPathBreadcrumbFullNamesOnly",
+          "group": "1_noSkip@2",
+          "when": "config.xpathCopier.enableCommands.breadcrumbFullNamesOnly"
         },
         {
-          "command": "xpathCopier.copyXPathNamesOnly"
+          "command": "xpathCopier.copyXPathBreadcrumbCompact",
+          "group": "1_noSkip@3",
+          "when": "config.xpathCopier.enableCommands.breadcrumbCompact"
         },
         {
-          "command": "xpathCopier.copyXPathNamedFull"
+          "command": "xpathCopier.copyXPathBreadcrumbCompactNamesOnly",
+          "group": "1_noSkip@4",
+          "when": "config.xpathCopier.enableCommands.breadcrumbCompactNamesOnly"
         },
         {
-          "command": "xpathCopier.copyXPathNamedCompact"
+          "command": "xpathCopier.copyXPathFull",
+          "group": "1_noSkip@5",
+          "when": "config.xpathCopier.enableCommands.full"
         },
         {
-          "command": "xpathCopier.copyXPathBreadcrumb"
+          "command": "xpathCopier.copyXPathFullNamesOnly",
+          "group": "1_noSkip@6",
+          "when": "config.xpathCopier.enableCommands.fullNamesOnly"
         },
         {
-          "command": "xpathCopier.copyXPathQuickPick"
+          "command": "xpathCopier.copyXPathCompact",
+          "group": "1_noSkip@7",
+          "when": "config.xpathCopier.enableCommands.compact"
         },
         {
-          "command": "xpathCopier.copyXPathReverse"
+          "command": "xpathCopier.copyXPathCompactNamesOnly",
+          "group": "1_noSkip@8",
+          "when": "config.xpathCopier.enableCommands.compactNamesOnly"
+        },
+        {
+          "command": "xpathCopier.copyXPathBreadcrumbFullSkip",
+          "group": "2_skip@1",
+          "when": "config.xpathCopier.enableCommands.breadcrumbFullSkip && xpathCopier.hasApplicableSkipRules"
+        },
+        {
+          "command": "xpathCopier.copyXPathBreadcrumbFullNamesOnlySkip",
+          "group": "2_skip@2",
+          "when": "config.xpathCopier.enableCommands.breadcrumbFullNamesOnlySkip && xpathCopier.hasApplicableSkipRules"
+        },
+        {
+          "command": "xpathCopier.copyXPathBreadcrumbCompactSkip",
+          "group": "2_skip@3",
+          "when": "config.xpathCopier.enableCommands.breadcrumbCompactSkip && xpathCopier.hasApplicableSkipRules"
+        },
+        {
+          "command": "xpathCopier.copyXPathBreadcrumbCompactNamesOnlySkip",
+          "group": "2_skip@4",
+          "when": "config.xpathCopier.enableCommands.breadcrumbCompactNamesOnlySkip && xpathCopier.hasApplicableSkipRules"
+        },
+        {
+          "command": "xpathCopier.copyXPathFullSkip",
+          "group": "2_skip@5",
+          "when": "config.xpathCopier.enableCommands.fullSkip && xpathCopier.hasApplicableSkipRules"
+        },
+        {
+          "command": "xpathCopier.copyXPathFullNamesOnlySkip",
+          "group": "2_skip@6",
+          "when": "config.xpathCopier.enableCommands.fullNamesOnlySkip && xpathCopier.hasApplicableSkipRules"
+        },
+        {
+          "command": "xpathCopier.copyXPathCompactSkip",
+          "group": "2_skip@7",
+          "when": "config.xpathCopier.enableCommands.compactSkip && xpathCopier.hasApplicableSkipRules"
+        },
+        {
+          "command": "xpathCopier.copyXPathCompactNamesOnlySkip",
+          "group": "2_skip@8",
+          "when": "config.xpathCopier.enableCommands.compactNamesOnlySkip && xpathCopier.hasApplicableSkipRules"
+        },
+        {
+          "command": "xpathCopier.copyXPathQuickPick",
+          "group": "3_other@1",
+          "when": "config.xpathCopier.enableCommands.quickPick"
+        },
+        {
+          "command": "xpathCopier.copyXPathReverse",
+          "group": "3_other@2",
+          "when": "config.xpathCopier.enableCommands.reverse"
         }
       ]
     },
@@ -116,6 +214,122 @@
           "type": "boolean",
           "default": true,
           "description": "Enable the context menu entries for copying XPath."
+        },
+        "xpathCopier.enableCommands": {
+          "type": "object",
+          "default": {
+            "breadcrumbFull": false,
+            "breadcrumbFullNamesOnly": false,
+            "breadcrumbCompact": true,
+            "breadcrumbCompactNamesOnly": true,
+            "full": true,
+            "fullNamesOnly": false,
+            "compact": true,
+            "compactNamesOnly": true,
+            "breadcrumbFullSkip": false,
+            "breadcrumbFullNamesOnlySkip": false,
+            "breadcrumbCompactSkip": false,
+            "breadcrumbCompactNamesOnlySkip": true,
+            "fullSkip": false,
+            "fullNamesOnlySkip": false,
+            "compactSkip": true,
+            "compactNamesOnlySkip": false,
+            "quickPick": true,
+            "reverse": true
+          },
+          "properties": {
+            "breadcrumbFull": {
+              "type": "boolean",
+              "default": true,
+              "description": "Enable 'XPath: Copy (Breadcrumb - Full)' command."
+            },
+            "breadcrumbFullNamesOnly": {
+              "type": "boolean",
+              "default": true,
+              "description": "Enable 'XPath: Copy (Breadcrumb - Full - Names Only)' command."
+            },
+            "breadcrumbCompact": {
+              "type": "boolean",
+              "default": true,
+              "description": "Enable 'XPath: Copy (Breadcrumb - Compact)' command."
+            },
+            "breadcrumbCompactNamesOnly": {
+              "type": "boolean",
+              "default": true,
+              "description": "Enable 'XPath: Copy (Breadcrumb - Compact - Names Only)' command."
+            },
+            "full": {
+              "type": "boolean",
+              "default": true,
+              "description": "Enable 'XPath: Copy (Full)' command."
+            },
+            "fullNamesOnly": {
+              "type": "boolean",
+              "default": true,
+              "description": "Enable 'XPath: Copy (Full - Names Only)' command."
+            },
+            "compact": {
+              "type": "boolean",
+              "default": true,
+              "description": "Enable 'XPath: Copy (Compact)' command."
+            },
+            "compactNamesOnly": {
+              "type": "boolean",
+              "default": true,
+              "description": "Enable 'XPath: Copy (Compact - Names Only)' command."
+            },
+            "breadcrumbFullSkip": {
+              "type": "boolean",
+              "default": true,
+              "description": "Enable 'XPath: Copy w/ skipping (Breadcrumb - Full)' command."
+            },
+            "breadcrumbFullNamesOnlySkip": {
+              "type": "boolean",
+              "default": true,
+              "description": "Enable 'XPath: Copy w/ skipping (Breadcrumb - Full - Names Only)' command."
+            },
+            "breadcrumbCompactSkip": {
+              "type": "boolean",
+              "default": true,
+              "description": "Enable 'XPath: Copy w/ skipping (Breadcrumb - Compact)' command."
+            },
+            "breadcrumbCompactNamesOnlySkip": {
+              "type": "boolean",
+              "default": true,
+              "description": "Enable 'XPath: Copy w/ skipping (Breadcrumb - Compact - Names Only)' command."
+            },
+            "fullSkip": {
+              "type": "boolean",
+              "default": true,
+              "description": "Enable 'XPath: Copy w/ skipping (Full)' command."
+            },
+            "fullNamesOnlySkip": {
+              "type": "boolean",
+              "default": true,
+              "description": "Enable 'XPath: Copy w/ skipping (Full - Names Only)' command."
+            },
+            "compactSkip": {
+              "type": "boolean",
+              "default": true,
+              "description": "Enable 'XPath: Copy w/ skipping (Compact)' command."
+            },
+            "compactNamesOnlySkip": {
+              "type": "boolean",
+              "default": true,
+              "description": "Enable 'XPath: Copy w/ skipping (Compact - Names Only)' command."
+            },
+            "quickPick": {
+              "type": "boolean",
+              "default": true,
+              "description": "Enable 'XPath: Copy…' (Quick Pick) command."
+            },
+            "reverse": {
+              "type": "boolean",
+              "default": true,
+              "description": "Enable 'XPath: Go To…' command."
+            }
+          },
+          "description": "Enable or disable specific commands and menu items."
         },
         "xpathCopier.languages": {
           "type": "array",
@@ -235,15 +449,15 @@
           },
           "description": "Rules for skipping elements in XPath based on file patterns. Each rule specifies a file pattern and list of element names to omit."
         },
-        "xpathCopier.nameAttribute": {
-          "type": "string",
-          "default": "name",
-          "description": "The attribute to use for extracting element names (e.g., 'name', 'id', 'key')."
-        },
-        "xpathCopier.nameOnly": {
-          "type": "boolean",
-          "default": false,
-          "description": "When an element has the configured name attribute, show only the attribute value instead of 'tag (value)'."
+        "xpathCopier.nameAttributes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [
+            "name"
+          ],
+          "description": "List of attributes to check for element names, in order of preference (e.g., ['name', 'id', 'label']). The first matching attribute found will be used."
         },
         "xpathCopier.showInQuickPick": {
           "type": "boolean",
@@ -264,17 +478,18 @@
     }
   },
   "scripts": {
-    "vscode:prepublish": "npm run esbuild-base -- --production",
+    "vscode:prepublish": "npm run esbuild-prod",
     "esbuild-base": "node esbuild.js",
     "esbuild": "npm run esbuild-base",
+    "esbuild-prod": "npm run esbuild-base -- --production",
     "esbuild-watch": "npm run esbuild-base -- --watch",
     "compile": "npm run esbuild",
     "watch": "npm run esbuild-watch",
     "pretest": "tsc -p ./",
-    "test": "mocha --require ts-node/register test/formats.test.ts test/element-skipping.test.ts",
+    "test": "mocha --require ts-node/register test/formats.test.ts test/element-skipping.test.ts test/name-attributes.test.ts",
     "lint": "echo 'No linter configured'",
     "clean": "rimraf dist",
-    "package": "npm run clean && npm run esbuild-base -- --production && vsce package",
+    "package": "npm run clean && npm run esbuild-prod && vsce package",
     "build": "npm run package",
     "audit": "npm audit"
   },

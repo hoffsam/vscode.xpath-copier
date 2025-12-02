@@ -23,7 +23,7 @@ export function findElementPathAtPosition(
   const text = document.getText();
   const offset = document.offsetAt(position);
 
-  console.log(`XPath Parser: Finding element at offset ${offset}, line ${position.line}, char ${position.character}`);
+  // console.log(`XPath Parser: Finding element at offset ${offset}, line ${position.line}, char ${position.character}`);
 
   // Find all opening and closing tags with their positions
   const tags = parseAllTags(text);
@@ -88,7 +88,7 @@ export function findElementPathAtPosition(
 
   const path = cursorPath || [];
 
-  console.log(`XPath Parser: Found path with ${path.length} elements: ${path.map(e => e.name).join(' > ')}`);
+  // console.log(`XPath Parser: Found path with ${path.length} elements: ${path.map(e => e.name).join(' > ')}`);
   return path.length > 0 ? path : undefined;
 }
 

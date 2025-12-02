@@ -6,7 +6,14 @@ import { findElementPathAtPosition, computeSiblingIndex as computeXmlSiblingInde
  */
 export enum XPathFormat {
   Full = 'full',
+  FullNamed = 'fullNamed',
   Compact = 'compact',
+  CompactNamed = 'compactNamed',
+  BreadcrumbFull = 'breadcrumbFull',
+  BreadcrumbFullNamed = 'breadcrumbFullNamed',
+  BreadcrumbCompact = 'breadcrumbCompact',
+  BreadcrumbCompactNamed = 'breadcrumbCompactNamed',
+  // Legacy formats (kept for backward compatibility)
   NamesOnly = 'namesOnly',
   NamedFull = 'namedFull',
   NamedCompact = 'namedCompact',
@@ -57,14 +64,10 @@ export interface ComputeOptions {
   enableSkipping?: boolean;
 
   /**
-   * The attribute name to use for extracting element names (default: 'name').
+   * A list of attribute names to check for extracting element names, in order of preference.
+   * The first matching attribute found will be used (default: ['name']).
    */
-  nameAttribute?: string;
-
-  /**
-   * When true, show only the name attribute value instead of 'tag (value)' format.
-   */
-  nameOnly?: boolean;
+  nameAttributes?: string[];
 }
 
 /**
@@ -83,19 +86,19 @@ export async function computeXPathForPosition(
   format: XPathFormat,
   options: ComputeOptions = {}
 ): Promise<string | undefined> {
-  console.log(`XPath Copier: computeXPathForPosition called for ${document.uri.toString()}`);
+  // console.log(`XPath Copier: computeXPathForPosition called for ${document.uri.toString()}`);
 
   // Use direct XML parsing instead of language server
   const elementPath = findElementPathAtPosition(document, position);
 
   if (!elementPath || elementPath.length === 0) {
-    console.log('XPath Copier: No element path found for position');
+    // console.log('XPath Copier: No element path found for position');
     return undefined;
   }
 
-  console.log(`XPath Copier: Found element path with ${elementPath.length} elements`);
+  // console.log(`XPath Copier: Found element path with ${elementPath.length} elements`);
   const segments = computeSegmentsFromElements(elementPath, document, options);
-  console.log(`XPath Copier: Computed ${segments.length} segments`);
+  // console.log(`XPath Copier: Computed ${segments.length} segments`);
 
   if (format === XPathFormat.Custom) {
     const templates = options.customTemplates ?? [];
@@ -143,17 +146,17 @@ function findSymbolPath(
 ): vscode.DocumentSymbol[] | undefined {
   for (const sym of symbols) {
     if (contains(sym.range, position)) {
-      console.log(`XPath Copier: Found matching symbol: ${sym.name}, children: ${sym.children?.length || 0}, level: ${ancestors.length}`);
+      // console.log(`XPath Copier: Found matching symbol: ${sym.name}, children: ${sym.children?.length || 0}, level: ${ancestors.length}`);
       // Descend into children to find a deeper match.
       if (sym.children && sym.children.length > 0) {
         const deeper = findSymbolPath(sym.children, position, [...ancestors, sym]);
         if (deeper) {
-          console.log(`XPath Copier: Returning deeper path with ${deeper.length} elements`);
+          // console.log(`XPath Copier: Returning deeper path with ${deeper.length} elements`);
           return deeper;
         }
-        console.log(`XPath Copier: No deeper match found in children of ${sym.name}`);
+        // console.log(`XPath Copier: No deeper match found in children of ${sym.name}`);
       } else {
-        console.log(`XPath Copier: Symbol ${sym.name} has no children (children=${sym.children})`);
+        // console.log(`XPath Copier: Symbol ${sym.name} has no children (children=${sym.children})`);
       }
       return [...ancestors, sym];
     }
@@ -180,7 +183,7 @@ function computeSegmentsFromElements(
   options?: ComputeOptions
 ): SegmentInfo[] {
   const skipElements = getSkipElements(options);
-  const nameAttribute = options?.nameAttribute || 'name';
+  const nameAttributes = options?.nameAttributes || ['name'];
 
   const segments: SegmentInfo[] = [];
   for (let i = 0; i < elementPath.length; i++) {
@@ -193,7 +196,17 @@ function computeSegmentsFromElements(
 
     // Compute sibling index considering skipped elements
     const index = computeXmlSiblingIndex(elementPath, i, document, skipElements);
-    const nameAttr = element.attributes.get(nameAttribute);
+    
+    // Look for name attribute in order of preference (skip empty values)
+    let nameAttr: string | undefined;
+    for (const attrName of nameAttributes) {
+      const value = element.attributes.get(attrName);
+      if (value && value.trim() !== '') {
+        nameAttr = value;
+        break;
+      }
+    }
+    
     segments.push({ tag: element.name, index, nameAttr });
   }
   return segments;
@@ -287,50 +300,82 @@ function extractNameAttribute(
  * selected format.  Exported for unit testing.
  */
 export function buildXPath(segments: SegmentInfo[], format: XPathFormat, options?: ComputeOptions): string {
-  const nameOnly = options?.nameOnly || false;
-
   switch (format) {
     case XPathFormat.Full:
+      // Always show indexes: /Tag[1]
       return segments.map((seg) => `/${seg.tag}[${seg.index}]`).join('');
-    case XPathFormat.Compact:
-      return segments
-        .map((seg) => `/${seg.tag}${seg.index > 1 ? `[${seg.index}]` : ''}`)
-        .join('');
-    case XPathFormat.NamesOnly:
-      return segments.map((seg) => `/${seg.tag}`).join('');
-    case XPathFormat.NamedFull:
-      // Named Full behaves like Named Compact: include the name attribute when
-      // present and elide indexes equal to 1.  This mirrors the examples in
-      // the specification where no index was shown for EntityDef or Attribute
-      // when a name attribute was present or the element was the first of its
-      // siblings.
+      
+    case XPathFormat.FullNamed:
+      // Show indexes, use [@name='value'] where name exists: /Tag[@name='value']/Tag[1]
       return segments
         .map((seg) => {
           if (seg.nameAttr) {
-            return nameOnly ? `/${seg.nameAttr}` : `/${seg.tag}[@name='${escapeXPathString(seg.nameAttr)}']`;
+            return `/${seg.tag}[@name='${escapeXPathString(seg.nameAttr)}']`;
+          }
+          return `/${seg.tag}[${seg.index}]`;
+        })
+        .join('');
+        
+    case XPathFormat.Compact:
+      // Omit [1] indexes: /Tag/Tag[2]
+      return segments
+        .map((seg) => `/${seg.tag}${seg.index > 1 ? `[${seg.index}]` : ''}`)
+        .join('');
+        
+    case XPathFormat.CompactNamed:
+      // Use name values as element names: /NameValue/Tag
+      return segments.map((seg) => `/${seg.nameAttr || seg.tag}`).join('');
+      
+    case XPathFormat.BreadcrumbFull:
+      // Show tags with indexes: Tag[1] > Tag[2]
+      return segments
+        .map((seg) => `${seg.tag}[${seg.index}]`)
+        .join(' > ');
+        
+    case XPathFormat.BreadcrumbFullNamed:
+      // Show tags with names in parentheses: Tag (NameValue) > Tag
+      return segments
+        .map((seg) => {
+          const namePart = seg.nameAttr ? ` (${seg.nameAttr})` : '';
+          return `${seg.tag}${namePart}`;
+        })
+        .join(' > ');
+        
+    case XPathFormat.BreadcrumbCompact:
+      // Show only tags: Tag > Tag
+      return segments.map((seg) => seg.tag).join(' > ');
+      
+    case XPathFormat.BreadcrumbCompactNamed:
+      // Show only name values where available: NameValue > Tag
+      return segments.map((seg) => seg.nameAttr || seg.tag).join(' > ');
+      
+    // Legacy formats for backward compatibility
+    // Legacy formats - kept for backward compatibility
+    case XPathFormat.NamesOnly:
+      return segments.map((seg) => `/${seg.nameAttr || seg.tag}`).join('');
+    case XPathFormat.NamedFull:
+      // Legacy: behaves like FullNamed
+      return segments
+        .map((seg) => {
+          if (seg.nameAttr) {
+            return `/${seg.nameAttr}`;
           }
           return seg.index > 1 ? `/${seg.tag}[${seg.index}]` : `/${seg.tag}`;
         })
         .join('');
     case XPathFormat.NamedCompact:
+      // Legacy: behaves like CompactNamed
       return segments
         .map((seg) => {
           if (seg.nameAttr) {
-            return nameOnly ? `/${seg.nameAttr}` : `/${seg.tag}[@name='${escapeXPathString(seg.nameAttr)}']`;
+            return `/${seg.nameAttr}`;
           }
           return seg.index > 1 ? `/${seg.tag}[${seg.index}]` : `/${seg.tag}`;
         })
         .join('');
     case XPathFormat.Breadcrumb:
-      return segments
-        .map((seg) => {
-          if (nameOnly && seg.nameAttr) {
-            return seg.nameAttr;
-          }
-          const namePart = seg.nameAttr ? ` (${seg.nameAttr})` : '';
-          return `${seg.tag}${namePart}`;
-        })
-        .join(' > ');
+      // Legacy: behaves like BreadcrumbCompactNamed
+      return segments.map((seg) => seg.nameAttr || seg.tag).join(' > ');
     default:
       return segments.map((seg) => `/${seg.tag}`).join('');
   }
